@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寂寞烟火 · 蓝心羽</title>
+<style>
+  html, body { margin: 0; background: #0a1120; height: 100%; overflow: hidden; }
+  #mv { position: absolute; inset: 0; margin: auto; width: min(100vw, 177.77778vh);
+        height: min(100vh, 56.25vw); }
+  canvas { display: block; width: 100%; height: 100%; }
+  #sound { display: none; }
+  #play { position: absolute; right: 20px; top: 20px; padding: 9px 15px; cursor: pointer;
+          color: #f4e4d4; background: #111827dc; border: 1px solid #ecd5b150; border-radius: 3px;
+          font: 15px 'Microsoft YaHei', sans-serif; }
+  .render #play { display: none; }
+</style>
+<main id="mv" data-composition-id="mv" data-width="1920" data-height="1080" data-start="0" data-duration="40.520">
+  <canvas id="film" width="1920" height="1080" aria-label="寂寞烟火 MV"></canvas>
+  <audio id="sound" class="clip" src="song.mp3" data-start="0" data-duration="40.520" data-track-index="1"></audio>
+  <button id="play" type="button">播放</button>
+</main>
+<script src="timeline.js"></script>
+<script src="film.js"></script>
+</html>
