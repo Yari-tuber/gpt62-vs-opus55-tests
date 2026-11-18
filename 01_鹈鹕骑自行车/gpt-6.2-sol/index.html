@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171e2b">
+  <title>盐风骑手 · Saltwind Ride</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="three-runtime.js"></script>
+  <script defer src="coast.js"></script>
+  <script defer src="rider.js"></script>
+  <script defer src="ride.js"></script>
+</head>
+<body>
+  <main id="ride" class="ride" aria-label="盐风骑手互动 3D 场景">
+    <div id="stage" class="stage" aria-label="海岸公路上的鹈鹕和自行车"></div>
+    <div class="wash" aria-hidden="true"></div>
+
+    <header class="masthead">
+      <div class="wordmark">
+        <span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>盐风骑手</span>
+      </div>
+      <button type="button" id="sunlight" class="light-switch" aria-label="切换至月夜" title="切换光照 L" disabled>
+        <span class="sun-icon" aria-hidden="true"></span><span id="light-name">落日</span>
+      </button>
+    </header>
+
+    <div class="title">
+      <h1 lang="en"><span>Saltwind</span><br><em>Ride.</em></h1>
+      <div class="title-line" aria-hidden="true"></div>
+      <p>沿海公路<span aria-hidden="true"> / </span><span lang="en">COASTAL ROUTE</span></p>
+    </div>
+
+    <div id="loading" class="status" role="status">正在进入海岸公路…</div>
+
+    <footer class="console">
+      <div class="gesture"><span aria-hidden="true">↔</span> 拖动转动镜头 <span class="gesture-sep">·</span> 滚轮缩放</div>
+      <div class="dock" aria-label="骑行控制">
+        <button type="button" id="play" class="play" aria-label="暂停骑行" title="暂停或继续骑行 · 空格" disabled>
+          <span class="play-icon" aria-hidden="true"></span>
+        </button>
+        <div class="speed">
+          <label for="pace">速度 <output id="pace-value" for="pace">1.0×</output></label>
+          <input id="pace" type="range" min="0.4" max="2.2" step="0.1" value="1" disabled>
+        </div>
+        <div class="views" role="group" aria-label="镜头">
+          <button type="button" data-view="side" aria-pressed="true" title="巡航镜头 · 1" disabled>巡航</button>
+          <button type="button" data-view="close" aria-pressed="false" title="近景镜头 · 2" disabled>近景</button>
+          <button type="button" data-view="orbit" aria-pressed="false" title="环绕镜头 · 3" disabled>环绕</button>
+        </div>
+        <button type="button" id="bell" class="bell" aria-label="拨动车铃" title="拨动车铃 · B" disabled>
+          <span class="bell-icon" aria-hidden="true">♩</span>
+        </button>
+      </div>
+      <div class="readout" aria-label="速度">
+        <span id="kmh">24</span> <span>KM/H</span>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>

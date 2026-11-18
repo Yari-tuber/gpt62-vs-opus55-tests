@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>林间小鹿 · 3D 步态展示</title>
+<style>
+:root{--ink:#fffaf0;--ink2:rgba(255,250,240,.72);--glass:rgba(28,36,24,.30);--line:rgba(255,255,255,.22);--accent:#ffd27f;--accent2:#ffb35c}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#d9e4dc;font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans SC",system-ui,sans-serif;color:var(--ink);-webkit-user-select:none;user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;outline:none}
+#c.drag{cursor:grabbing}
+.vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 42%,rgba(0,0,0,0) 58%,rgba(18,26,14,.38) 100%)}
+.glass{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px) saturate(1.25);-webkit-backdrop-filter:blur(14px) saturate(1.25);box-shadow:0 10px 40px rgba(20,30,10,.22),inset 0 1px 0 rgba(255,255,255,.18)}
+.title{position:fixed;left:30px;top:24px;pointer-events:none;text-shadow:0 2px 14px rgba(30,40,20,.45)}
+.title h1{margin:0;font-size:30px;font-weight:600;letter-spacing:.18em}
+.title h1 span{font-weight:300;opacity:.85}
+.title p{margin:6px 0 0;font-size:12.5px;letter-spacing:.32em;color:var(--ink2);text-transform:uppercase}
+.bar{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);display:flex;gap:6px;padding:7px;border-radius:22px}
+.btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;width:82px;padding:10px 0 8px;border:0;border-radius:16px;background:transparent;color:var(--ink);font:inherit;cursor:pointer;transition:background .25s,transform .2s,color .25s}
+.btn svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;opacity:.92}
+.btn b{font-size:14px;font-weight:500;letter-spacing:.12em}
+.btn i{position:absolute;top:6px;right:9px;font-style:normal;font-size:10px;opacity:.45}
+.btn:hover{background:rgba(255,255,255,.12);transform:translateY(-2px)}
+.btn.on{background:linear-gradient(160deg,rgba(255,226,160,.95),rgba(255,184,98,.92));color:#3b2a12;box-shadow:0 6px 22px rgba(255,170,70,.35)}
+.btn.on i{opacity:.6}
+.panel{position:fixed;right:24px;top:24px;width:272px;padding:14px 16px 12px;border-radius:18px}
+.row{display:flex;align-items:baseline;justify-content:space-between}
+.gait{font-size:20px;font-weight:600;letter-spacing:.12em}
+.speed{font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.sub{font-size:11.5px;color:var(--ink2);margin-top:3px;letter-spacing:.06em;min-height:15px}
+#diag{display:block;width:240px;height:92px;margin-top:10px;border-radius:10px;background:rgba(0,0,0,.16)}
+.cap{font-size:10.5px;color:var(--ink2);margin-top:6px;letter-spacing:.04em;line-height:1.5}
+.toggles{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.tg{flex:1;min-width:70px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);border-radius:10px;padding:6px 0;font:inherit;font-size:12px;cursor:pointer;transition:.2s}
+.tg:hover{background:rgba(255,255,255,.14)}
+.tg.on{background:rgba(255,214,140,.85);color:#3b2a12;border-color:transparent}
+.hint{position:fixed;left:30px;bottom:30px;font-size:12px;color:var(--ink2);line-height:1.8;pointer-events:none;text-shadow:0 1px 8px rgba(30,40,20,.5)}
+.hint kbd{display:inline-block;min-width:18px;padding:0 5px;margin:0 2px;border-radius:5px;border:1px solid rgba(255,255,255,.35);font:inherit;font-size:11px;text-align:center}
+#loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(circle at 50% 40%,#f3efe2,#cfdcc8);color:#4b5a3a;transition:opacity 1s ease;z-index:10}
+#loader .ring{width:46px;height:46px;border-radius:50%;border:3px solid rgba(75,90,58,.18);border-top-color:#7a8f55;animation:spin 1s linear infinite}
+#loader p{margin:0;font-size:14px;letter-spacing:.2em}
+#loader.err .ring{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (max-width:820px){.panel{display:none}.btn{width:56px}.btn b{font-size:12px}.btn i{display:none}.title h1{font-size:22px}.hint{display:none}.bar{bottom:14px;gap:2px}}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="0"></canvas>
+<div class="vignette"></div>
+
+<div class="title">
+  <h1>林间小鹿 <span>· 梅花鹿</span></h1>
+  <p>Sika Deer · Procedural Gait</p>
+</div>
+
+<div class="panel glass" id="panel">
+  <div class="row"><div class="gait" id="gaitName">慢走</div><div class="speed" id="speed">0.0 km/h</div></div>
+  <div class="sub" id="gaitSub">四拍侧对步 · 左后→左前→右后→右前</div>
+  <canvas id="diag" width="480" height="184"></canvas>
+  <div class="cap">足部着地图（实时）：亮条 = 蹄子踩在地上。蹄子着地时锁定在地面坐标，不会打滑。</div>
+  <div class="toggles">
+    <button class="tg" id="tgSlow">慢动作</button>
+    <button class="tg" id="tgPrint">足迹标记</button>
+    <button class="tg" id="tgOrbit">自动环绕</button>
+  </div>
+</div>
+
+<div class="bar glass" id="bar">
+  <button class="btn" data-act="walk"><i>1</i>
+    <svg viewBox="0 0 32 32"><path d="M9 25c0-3 1.5-4.5 3-4.5S15 22 15 25"/><path d="M18 14c0-3 1.5-4.5 3-4.5S24 11 24 14"/><path d="M12 20.5v-2M21 9.5v-2"/></svg><b>走</b></button>
+  <button class="btn" data-act="trot"><i>2</i>
+    <svg viewBox="0 0 32 32"><path d="M6 22c3-6 7-6 10 0s7 6 10 0"/><path d="M8 12h6M11 8h7"/></svg><b>小跑</b></button>
+  <button class="btn" data-act="gallop"><i>3</i>
+    <svg viewBox="0 0 32 32"><path d="M4 11h9M2 16h10M5 21h8"/><path d="M15 21c3-1 5-5 8-8 2-2 4-2 6-1"/><path d="M17 12c2 0 4 1 5 3"/></svg><b>狂奔</b></button>
+  <button class="btn" data-act="leap"><i>4</i>
+    <svg viewBox="0 0 32 32"><path d="M4 25c4-14 20-14 24 0"/><path d="M24 21l4 4 2-5"/><path d="M3 27h26" opacity=".5"/></svg><b>跳跃</b></button>
+  <button class="btn" data-act="graze"><i>5</i>
+    <svg viewBox="0 0 32 32"><path d="M8 27c0-6-2-10-4-12M13 27c0-7 1-12 3-15M19 27c0-5 2-9 5-11M24 27c0-3 1-5 3-6"/><path d="M3 27h26"/></svg><b>吃草</b></button>
+  <button class="btn" data-act="look"><i>6</i>
+    <svg viewBox="0 0 32 32"><path d="M3 16s5-8 13-8 13 8 13 8-5 8-13 8S3 16 3 16z"/><circle cx="16" cy="16" r="3.5"/><path d="M24 4l3 3-3 3"/></svg><b>张望</b></button>
+</div>
+
+<div class="hint">拖动鼠标 绕着看 · 滚轮 缩放 · 双击 复位视角<br>键盘 <kbd>1</kbd>–<kbd>6</kbd> 切换动作 · <kbd>空格</kbd> 慢动作</div>
+
+<div id="loader"><div class="ring"></div><p id="loadMsg">正在载入 three.js …</p></div>
+
+<script type="module">
+// ============================================================================
+//  林间小鹿 —— three.js 程序化步态演示
+//  全部模型、动画、场景均由代码生成；仅从 CDN 载入 three.js 本体。
+// ============================================================================
+const CDN = [
+  'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js',
+  'https://unpkg.com/three@0.160.0/build/three.module.min.js',
+  'https://cdn.bootcdn.net/ajax/libs/three.js/0.160.0/three.module.min.js',
+  'https://cdn.staticfile.net/three.js/0.160.0/three.module.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js',
+];
+let THREE = null;
+for (const url of CDN) {
+  try { THREE = await import(url); break; } catch (e) { console.warn('three.js 载入失败：', url); }
+}
+if (!THREE) {
+  document.getElementById('loader').classList.add('err');
+  document.getElementById('loadMsg').textContent = '无法载入 three.js，请检查网络连接后刷新页面';
+  throw new Error('three.js unavailable');
+}
+
+// ---------------------------------------------------------------------------
+//  小工具
+// ---------------------------------------------------------------------------
+const V3 = THREE.Vector3, QT = THREE.Quaternion, M4 = THREE.Matrix4;
+const PI = Math.PI, TAU = PI * 2, DEG = PI / 180;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const sm = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
+const sstep = (a, b, x) => sm((x - a) / (b - a));
+const fract = x => x - Math.floor(x);
+const wrapD = d => d - Math.round(d);               // 周期差值 → [-0.5,0.5]
+const damp = (c, t, k, dt) => c + (t - c) * (1 - Math.exp(-k * dt));
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const R = rng(20261118);
+const srgb = (hex) => new THREE.Color(hex);       // 颜色（会自动转线性）
+// 平滑随机（多正弦叠加）
+const wob = (t, s = 0) => Math.sin(t * 1.13 + s) * 0.5 + Math.sin(t * 2.37 + s * 1.7) * 0.3 + Math.sin(t * 4.11 + s * 2.3) * 0.2;
+// 周期关键帧曲线（Hermite，有限差分切线）keys: [[phase, a, b, ...], ...]
+function cycCurve(keys) {
+  const n = keys.length, dim = keys[0].length - 1;
+  return (ph, out) => {
+    ph = fract(ph);
+    let i = n - 1;
+    for (let k = 0; k < n; k++) { if (keys[k][0] > ph) { i = k - 1; break; } }
+    const i0 = (i + n) % n, i1 = (i0 + 1) % n, im = (i0 - 1 + n) % n, i2 = (i1 + 1) % n;
+    const tp = (a, b) => { let d = keys[b][0] - keys[a][0]; if (d <= 0) d += 1; return d; };
+    const h = tp(i0, i1); let u = ph - keys[i0][0]; if (u < 0) u += 1; u /= h;
+    const hm = tp(im, i0), hp = tp(i1, i2);
+    const u2 = u * u, u3 = u2 * u;
+    const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
+    for (let d = 1; d <= dim; d++) {
+      const p0 = keys[i0][d], p1 = keys[i1][d];
+      const m0 = (p1 - keys[im][d]) / (h + hm), m1 = (keys[i2][d] - p0) / (h + hp);
+      out[d - 1] = h00 * p0 + h10 * h * m0 + h01 * p1 + h11 * h * m1;
+    }
+    return out;
+  };
+}
+// 非周期关键帧（时间轴，零切线平滑）keys: [[t, a, b...]]
+function seqCurve(keys) {
+  const n = keys.length, dim = keys[0].length - 1, T = keys[n - 1][0];
+  return (t, out) => {
+    t = ((t % T) + T) % T;
+    let i = 0; while (i < n - 2 && keys[i + 1][0] <= t) i++;
+    const a = keys[i], b = keys[i + 1];
+    const u = sm((t - a[0]) / Math.max(1e-6, b[0] - a[0]));
+    for (let d = 1; d <= dim; d++) out[d - 1] = lerp(a[d], b[d], u);
+    return out;
+  };
+}
+
+// ---------------------------------------------------------------------------
+//  渲染器 / 场景 / 相机
+// ---------------------------------------------------------------------------
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const HORIZON = new THREE.Color().setRGB(0.80, 0.84, 0.80);
+scene.fog = new THREE.Fog(HORIZON.clone(), 26, 210);
+const camera = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, 0.05, 1500);
+
+// 光照：低角度暖阳 + 天空半球光
+const SUN_DIR = new V3(-0.62, 0.56, 0.55).normalize();
+const hemi = new THREE.HemisphereLight(0xd6e6ff, 0x6b7a45, 1.05);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffe7c4, 3.1);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+{ const c = sun.shadow.camera; c.left = -4.2; c.right = 4.2; c.top = 4.2; c.bottom = -4.2; c.near = 0.5; c.far = 40; }
+sun.shadow.bias = -0.00025; sun.shadow.normalBias = 0.015;
+scene.add(sun, sun.target);
+const fill = new THREE.DirectionalLight(0xbfd4ff, 0.45);   // 逆光轮廓补光
+scene.add(fill, fill.target);
+
+// 天空穹顶：渐变 + 太阳光晕 + 远山剪影 + 淡云
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  uniforms: { uSun: { value: SUN_DIR }, uHor: { value: HORIZON }, uTime: { value: 0 } },
+  vertexShader: `varying vec3 vDir; void main(){ vDir = position; vec4 p = modelViewMatrix*vec4(position,1.); gl_Position = projectionMatrix*p; gl_Position.z = gl_Position.w*0.99999; }`,
+  fragmentShader: `
+    varying vec3 vDir; uniform vec3 uSun; uniform vec3 uHor; uniform float uTime;
+    float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+      return mix(mix(h21(i),h21(i+vec2(1,0)),f.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x), f.y); }
+    float fbm(vec2 p){ float s=0., a=.5; for(int i=0;i<5;i++){ s+=a*vn(p); p=p*2.03+vec2(1.7,9.2); a*=.5; } return s; }
+    void main(){
+      vec3 d = normalize(vDir);
+      float h = d.y;
+      vec3 zen = vec3(0.16,0.36,0.72), mid = vec3(0.42,0.60,0.86);
+      vec3 col = mix(uHor, mid, smoothstep(0.0,0.22,h));
+      col = mix(col, zen, smoothstep(0.18,0.9,h));
+      float sd = max(dot(d,uSun),0.);
+      col += vec3(1.0,0.78,0.5)*pow(sd,6.)*0.28 + vec3(1.0,0.85,0.6)*pow(sd,64.)*0.5;
+      col += vec3(1.0,0.95,0.85)*smoothstep(0.9993,0.99965,sd)*8.;
+      // 云
+      if (h > 0.02) {
+        vec2 uv = d.xz/(h+0.12)*1.3 + vec2(uTime*0.004, 0.);
+        float c = fbm(uv*1.2);
+        c = smoothstep(0.52,0.8,c) * smoothstep(0.02,0.25,h);
+        vec3 cc = mix(vec3(1.0,0.97,0.92), vec3(0.78,0.80,0.86), smoothstep(0.6,1.0,fbm(uv*2.4+3.)));
+        cc += vec3(1.0,0.8,0.55)*pow(sd,4.)*0.4;
+        col = mix(col, cc, c*0.85);
+      }
+      // 远山（两层，带空气透视）
+      float az = atan(d.z, d.x);
+      float m1 = 0.055 + 0.030*sin(az*2.0+0.6) + 0.018*sin(az*5.3+2.1) + 0.008*sin(az*13.1+0.4) + 0.004*sin(az*29.0);
+      float m2 = 0.028 + 0.016*sin(az*3.1+4.0) + 0.010*sin(az*7.7+1.3) + 0.005*sin(az*19.3+2.2);
+      vec3 far1 = mix(uHor, vec3(0.50,0.62,0.70), 0.55);
+      vec3 far2 = mix(uHor, vec3(0.36,0.50,0.42), 0.55);
+      col = mix(col, far1 + vec3(1.,.8,.6)*pow(sd,3.)*0.08, smoothstep(m1+0.002, m1-0.002, h) * smoothstep(-0.02,0.0,h));
+      col = mix(col, far2, smoothstep(m2+0.002, m2-0.002, h) * smoothstep(-0.03,0.0,h));
+      col = mix(col, uHor, smoothstep(0.012,-0.02,h));
+      gl_FragColor = vec4(col,1.);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(1000, 48, 24), skyMat);
+sky.frustumCulled = false; sky.renderOrder = -10;
+scene.add(sky);
+
+// ---------------------------------------------------------------------------
+//  地面 / 草 / 野花 / 树林 / 光尘
+// ---------------------------------------------------------------------------
+const GLSL_NOISE = `
+  float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+  float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+    return mix(mix(h21(i),h21(i+vec2(1,0)),f.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x), f.y); }
+  float fbm(vec2 p){ float s=0., a=.5; for(int i=0;i<4;i++){ s+=a*vn(p); p=p*2.07+vec2(3.1,7.7); a*=.5; } return s; }
+`;
+const worldU = { uTime: { value: 0 }, uC: { value: new V3() } };   // 共享：时间、跟随中心
+
+// 地面
+const groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.97, metalness: 0 });
+groundMat.onBeforeCompile = (sh) => {
+  sh.vertexShader = sh.vertexShader
+    .replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
+    .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix*vec4(transformed,1.)).xyz;');
+  sh.fragmentShader = sh.fragmentShader
+    .replace('#include <common>', '#include <common>\nvarying vec3 vWP;\n' + GLSL_NOISE)
+    .replace('#include <color_fragment>', `#include <color_fragment>
+      vec2 gp = vWP.xz;
+      float n1 = fbm(gp*0.07), n2 = fbm(gp*0.55+7.0), n3 = vn(gp*4.3);
+      vec3 c = mix(vec3(0.050,0.095,0.022), vec3(0.085,0.135,0.032), smoothstep(0.3,0.75,n1));
+      c = mix(c, vec3(0.16,0.15,0.06), smoothstep(0.62,0.9,fbm(gp*0.035+11.0))*0.55);
+      c *= 0.82 + 0.28*n2 + 0.12*n3;
+      diffuseColor.rgb = c;`);
+};
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), groundMat);
+ground.rotation.x = -PI / 2; ground.receiveShadow = true;
+scene.add(ground);
+
+// 草叶：实例化 + 着色器内环绕平铺（草地无限延伸）
+function bladeGeometry() {
+  const pos = [], idx = [];
+  const L = 5;
+  for (let j = 0; j < L; j++) { const y = j / L; pos.push(-0.5, y, 0, 0.5, y, 0); }
+  pos.push(0, 1, 0);
+  for (let j = 0; j < L - 1; j++) { const a = j * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  const a = (L - 1) * 2; idx.push(a, a + 1, L * 2);
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  const nrm = []; for (let i = 0; i < pos.length / 3; i++) nrm.push(0, 1, 0);
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  g.setIndex(idx);
+  return g;
+}
+function makeGrass(count, size, hMin, hMax, wMin, wMax, fadeIn, seed) {
+  const r = rng(seed);
+  const g = bladeGeometry();
+  const aP = new Float32Array(count * 4), aS = new Float32Array(count * 4);
+  for (let i = 0; i < count; i++) {
+    const x = (r() - 0.5) * size, z = (r() - 0.5) * size;
+    const clump = 0.5 + 0.5 * Math.sin(x * 0.9 + Math.sin(z * 0.7) * 2.0) * Math.sin(z * 0.8 + x * 0.3);
+    const tall = r() < 0.04 ? 1.5 : 1.0;
+    aP.set([x, z, r(), r() * TAU], i * 4);
+    aS.set([lerp(hMin, hMax, Math.pow(r(), 1.3) * 0.7 + clump * 0.3) * tall, lerp(wMin, wMax, r()), (r() - 0.5) * 0.9, r()], i * 4);
+  }
+  g.setAttribute('aP', new THREE.InstancedBufferAttribute(aP, 4));
+  g.setAttribute('aS', new THREE.InstancedBufferAttribute(aS, 4));
+  g.instanceCount = count;
+  const m = new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0, side: THREE.DoubleSide });
+  const U = { uSize: { value: size }, uFadeIn: { value: fadeIn } };
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, worldU, U);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `#include <common>
+        attribute vec4 aP; attribute vec4 aS;
+        uniform vec3 uC; uniform float uSize; uniform float uTime; uniform float uFadeIn;
+        varying vec3 vG; varying float vY;`)
+      .replace('#include <beginnormal_vertex>', `
+        vec2 rel = mod(aP.xy - uC.xz + 0.5*uSize, uSize) - 0.5*uSize;
+        vec2 base = uC.xz + rel;
+        float fade = 1.0 - smoothstep(uSize*0.5*uFadeIn, uSize*0.5, max(abs(rel.x),abs(rel.y)));
+        float H = aS.x * fade;
+        float y = position.y;
+        float gust = sin(uTime*0.8 + base.x*0.10 + base.y*0.06)*0.5+0.5;
+        float w = sin(uTime*2.3 + base.x*0.8 + base.y*0.55 + aP.z*6.28)*0.6 + sin(uTime*3.9 + base.x*2.1 - base.y*1.4)*0.3;
+        vec2 wdir = vec2(0.8,0.6);
+        float cy = cos(aP.w), sy = sin(aP.w);
+        vec2 faceN = vec2(-sy, cy);
+        float lw = (0.18 + 0.32*gust) + w*0.16;
+        float b2 = y*y;
+        float wd = position.x*aS.y*(1.0-0.88*y);
+        vec3 wp = vec3(wd*cy, y*H*(1.0-0.22*(lw*lw+aS.z*aS.z)*b2), wd*sy);
+        wp.xz += (wdir*lw + faceN*aS.z) * b2 * H;
+        vec3 gPos = vec3(base.x, 0.0, base.y) + wp;
+        vec3 objectNormal = normalize(vec3(faceN.x*0.45 + wdir.x*0.25*lw, 1.0, faceN.y*0.45 + wdir.y*0.25*lw));
+        vY = y;
+        float patchN = sin(base.x*0.23+sin(base.y*0.17)*2.0)*0.5+0.5;
+        vec3 tip = mix(vec3(0.20,0.36,0.06), vec3(0.42,0.46,0.12), clamp(aS.w*0.7 + patchN*0.4, 0.0, 1.0));
+        vG = mix(vec3(0.035,0.07,0.016), tip, pow(y, 0.75));`)
+      .replace('#include <begin_vertex>', 'vec3 transformed = gPos;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vG; varying float vY;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\n diffuseColor.rgb = vG;')
+      .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n normal = normalize(vNormal);')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += vG * vY * vY * 0.22;');
+  };
+  const mesh = new THREE.Mesh(g, m);
+  mesh.frustumCulled = false; mesh.receiveShadow = true;
+  scene.add(mesh);
+  return mesh;
+}
+const grassNear = makeGrass(70000, 30, 0.05, 0.19, 0.010, 0.017, 0.80, 7);
+const grassFar = makeGrass(42000, 96, 0.10, 0.30, 0.020, 0.034, 0.80, 8);
+
+// 野花（白、黄、淡紫、粉）
+function makeFlowers(count, size, seed) {
+  const r = rng(seed);
+  const pos = [], part = [];
+  pos.push(-0.5, 0, 0, 0.5, 0, 0, -0.5, 1, 0, 0.5, 1, 0); part.push(0, 0, 0, 0);          // 茎
+  for (let k = 0; k < 5; k++) {                                                          // 花瓣
+    const a0 = k / 5 * TAU, a1 = a0 + 0.42, a2 = a0 - 0.42;
+    pos.push(0, 1, 0, Math.cos(a1), 1, Math.sin(a1), Math.cos(a0) * 1.25, 1, Math.sin(a0) * 1.25,
+      0, 1, 0, Math.cos(a0) * 1.25, 1, Math.sin(a0) * 1.25, Math.cos(a2), 1, Math.sin(a2));
+    part.push(1, 1, 1, 1, 1, 1);
+  }
+  for (let k = 0; k < 6; k++) {                                                          // 花心
+    const a = k / 6 * TAU, b = (k + 1) / 6 * TAU;
+    pos.push(0, 1.02, 0, Math.cos(a) * 0.35, 1.02, Math.sin(a) * 0.35, Math.cos(b) * 0.35, 1.02, Math.sin(b) * 0.35);
+    part.push(2, 2, 2);
+  }
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  const nrm = []; for (let i = 0; i < pos.length / 3; i++) nrm.push(0, 1, 0);
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  g.setAttribute('aPart', new THREE.Float32BufferAttribute(part, 1));
+  const idx = [0, 1, 2, 1, 3, 2]; for (let i = 4; i < pos.length / 3; i++) idx.push(i);
+  g.setIndex(idx);
+  const aP = new Float32Array(count * 4), aC = new Float32Array(count * 3);
+  const pal = [[0.92, 0.92, 0.86], [0.95, 0.80, 0.22], [0.62, 0.52, 0.86], [0.95, 0.62, 0.70], [0.98, 0.98, 0.95]];
+  let n = 0, guard = 0;
+  while (n < count && guard++ < count * 50) {
+    const x = (r() - 0.5) * size, z = (r() - 0.5) * size;
+    const cl = Math.sin(x * 0.35 + 1.3) * Math.sin(z * 0.41 + 0.4) + Math.sin(x * 0.13 - z * 0.11) * 0.6;
+    if (cl < 0.35 && r() > 0.12) continue;
+    const c = pal[Math.floor(Math.abs(Math.sin(x * 0.05 + z * 0.07) * 7 + r() * 1.6)) % pal.length];
+    aP.set([x, z, lerp(0.10, 0.26, r()), r() * TAU], n * 4);
+    const col = new THREE.Color().setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
+    aC.set([col.r, col.g, col.b], n * 3);
+    n++;
+  }
+  g.setAttribute('aP', new THREE.InstancedBufferAttribute(aP, 4));
+  g.setAttribute('aC', new THREE.InstancedBufferAttribute(aC, 3));
+  g.instanceCount = n;
+  const m = new THREE.MeshStandardMaterial({ roughness: 0.6, side: THREE.DoubleSide });
+  const U = { uSize: { value: size } };
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, worldU, U);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `#include <common>
+        attribute vec4 aP; attribute vec3 aC; attribute float aPart;
+        uniform vec3 uC; uniform float uSize; uniform float uTime; varying vec3 vFC;`)
+      .replace('#include <beginnormal_vertex>', `
+        vec2 rel = mod(aP.xy - uC.xz + 0.5*uSize, uSize) - 0.5*uSize;
+        vec2 base = uC.xz + rel;
+        float fade = 1.0 - smoothstep(uSize*0.42, uSize*0.5, max(abs(rel.x),abs(rel.y)));
+        float H = aP.z * fade;
+        float sway = sin(uTime*2.0 + base.x*0.9 + base.y*0.6)*0.03 + 0.02;
+        vec3 gPos;
+        vec3 objectNormal = vec3(0.,1.,0.);
+        float cy = cos(aP.w), sy = sin(aP.w);
+        if (aPart < 0.5) {
+          float y = position.y;
+          gPos = vec3(position.x*0.004*cy, y*H, position.x*0.004*sy);
+          gPos.xz += vec2(0.8,0.6)*sway*y*y*H*4.0;
+          vFC = mix(vec3(0.04,0.09,0.02), vec3(0.16,0.30,0.06), y);
+        } else {
+          float s = 0.016*fade;
+          vec3 lp = vec3(position.x*s, length(position.xz)*0.004, position.z*s);
+          gPos = vec3(lp.x*cy - lp.z*sy, H + lp.y, lp.x*sy + lp.z*cy);
+          gPos.xz += vec2(0.8,0.6)*sway*H*4.0;
+          vFC = aPart < 1.5 ? aC : vec3(0.95,0.72,0.12);
+        }
+        gPos += vec3(base.x, 0.0, base.y);`)
+      .replace('#include <begin_vertex>', 'vec3 transformed = gPos;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vFC;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\n diffuseColor.rgb = vFC;')
+      .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n normal = normalize(vNormal);')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += vFC*0.08;');
+  };
+  const mesh = new THREE.Mesh(g, m);
+  mesh.frustumCulled = false; mesh.receiveShadow = true;
+  scene.add(mesh);
+  return mesh;
+}
+const flowers = makeFlowers(2600, 40, 31);
+
+// 合并几何体（非索引化，带顶点色）
+function mergeGeos(list) {
+  const P = [], N = [], C = [];
+  for (const { geo, color, m } of list) {
+    const g = (geo.index ? geo.toNonIndexed() : geo.clone());
+    if (m) g.applyMatrix4(m);
+    g.computeVertexNormals();
+    const p = g.attributes.position.array, n = g.attributes.normal.array;
+    for (let i = 0; i < p.length; i += 3) {
+      P.push(p[i], p[i + 1], p[i + 2]); N.push(n[i], n[i + 1], n[i + 2]);
+      const k = 0.9 + 0.2 * Math.sin(p[i] * 3.1 + p[i + 1] * 2.3 + p[i + 2] * 4.7);
+      C.push(color.r * k, color.g * k, color.b * k);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+  return g;
+}
+function lumpy(geo, amt, seed) {   // 给球体加起伏，让树冠更自然
+  const r = rng(seed), p = geo.attributes.position, v = new V3();
+  const k1 = r() * 10, k2 = r() * 10;
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    const s = 1 + amt * (Math.sin(v.x * 7 + k1) * Math.sin(v.y * 6 + k2) * Math.sin(v.z * 8 + k1));
+    p.setXYZ(i, v.x * s, v.y * s, v.z * s);
+  }
+  return geo;
+}
+const leafA = srgb(0x4f7a2c), leafB = srgb(0x6d9438), leafC = srgb(0x3b6427), bark = srgb(0x5a4330);
+const broadTree = mergeGeos([
+  { geo: new THREE.CylinderGeometry(0.16, 0.3, 3.2, 7), color: bark, m: new M4().makeTranslation(0, 1.6, 0) },
+  { geo: lumpy(new THREE.IcosahedronGeometry(2.2, 2), 0.12, 1), color: leafA, m: new M4().makeTranslation(0, 4.4, 0) },
+  { geo: lumpy(new THREE.IcosahedronGeometry(1.6, 2), 0.15, 2), color: leafB, m: new M4().makeTranslation(1.2, 3.7, 0.5) },
+  { geo: lumpy(new THREE.IcosahedronGeometry(1.5, 2), 0.15, 3), color: leafC, m: new M4().makeTranslation(-1.1, 3.9, -0.4) },
+  { geo: lumpy(new THREE.IcosahedronGeometry(1.3, 2), 0.15, 4), color: leafB, m: new M4().makeTranslation(0.2, 5.6, 0.3) },
+]);
+const pineTree = mergeGeos([
+  { geo: new THREE.CylinderGeometry(0.1, 0.22, 2.4, 6), color: bark, m: new M4().makeTranslation(0, 1.2, 0) },
+  { geo: new THREE.ConeGeometry(1.9, 3.0, 9), color: srgb(0x2f5a2c), m: new M4().makeTranslation(0, 2.9, 0) },
+  { geo: new THREE.ConeGeometry(1.5, 2.6, 9), color: srgb(0x356534), m: new M4().makeTranslation(0, 4.3, 0) },
+  { geo: new THREE.ConeGeometry(1.05, 2.2, 9), color: srgb(0x3d6f3a), m: new M4().makeTranslation(0, 5.6, 0) },
+]);
+const bushGeo = mergeGeos([
+  { geo: lumpy(new THREE.IcosahedronGeometry(0.9, 2), 0.18, 9), color: leafA, m: new M4().makeTranslation(0, 0.55, 0) },
+  { geo: lumpy(new THREE.IcosahedronGeometry(0.7, 2), 0.2, 10), color: leafB, m: new M4().makeTranslation(0.7, 0.45, 0.2) },
+  { geo: lumpy(new THREE.IcosahedronGeometry(0.6, 2), 0.2, 11), color: leafC, m: new M4().makeTranslation(-0.6, 0.4, -0.2) },
+]);
+const vegMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
+const props = [];
+function scatter(geo, count, zMin, zMax, sMin, sMax, period, seed) {
+  const r = rng(seed);
+  const mesh = new THREE.InstancedMesh(geo, vegMat, count);
+  const items = [];
+  for (let i = 0; i < count; i++) {
+    const side = r() < 0.5 ? -1 : 1;
+    const z = side * lerp(zMin, zMax, Math.pow(r(), 0.8));
+    const c = 0.8 + r() * 0.35;
+    items.push({ x: (r() - 0.5) * period, z, s: lerp(sMin, sMax, r()), rot: r() * TAU });
+    mesh.setColorAt(i, new THREE.Color(c, c, c * (0.9 + r() * 0.2)));
+  }
+  mesh.frustumCulled = false;
+  scene.add(mesh);
+  props.push({ mesh, items, period });
+}
+scatter(broadTree, 90, 24, 150, 0.7, 1.35, 420, 101);
+scatter(pineTree, 110, 30, 170, 0.8, 1.6, 420, 102);
+scatter(bushGeo, 70, 7, 26, 0.5, 1.2, 180, 103);
+const _pm = new M4(), _pq = new QT(), _ps = new V3(), _pp = new V3(), _up = new V3(0, 1, 0);
+function updateProps(cx) {
+  for (const P of props) {
+    const half = P.period / 2;
+    P.items.forEach((it, i) => {
+      while (it.x - cx < -half) it.x += P.period;
+      while (it.x - cx > half) it.x -= P.period;
+      _pq.setFromAxisAngle(_up, it.rot); _ps.setScalar(it.s); _pp.set(it.x, 0, it.z);
+      P.mesh.setMatrixAt(i, _pm.compose(_pp, _pq, _ps));
+    });
+    P.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
+// 空气中的光尘
+const moteCount = 420;
+const moteGeo = new THREE.BufferGeometry();
+{
+  const a = new Float32Array(moteCount * 3), s = new Float32Array(moteCount);
+  for (let i = 0; i < moteCount; i++) { a.set([(R() - 0.5) * 18, R() * 3.2 + 0.2, (R() - 0.5) * 18], i * 3); s[i] = R(); }
+  moteGeo.setAttribute('position', new THREE.BufferAttribute(a, 3));
+  moteGeo.setAttribute('aR', new THREE.BufferAttribute(s, 1));
+}
+const moteMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { uTime: worldU.uTime, uC: worldU.uC, uPR: { value: renderer.getPixelRatio() } },
+  vertexShader: `attribute float aR; uniform float uTime; uniform vec3 uC; uniform float uPR; varying float vA;
+    void main(){
+      vec3 p = position + vec3(sin(uTime*0.3+aR*20.)*0.6 + uTime*0.15, sin(uTime*0.5+aR*13.)*0.25, cos(uTime*0.27+aR*17.)*0.6);
+      p.xz = uC.xz + mod(p.xz - uC.xz + 9.0, 18.0) - 9.0;
+      vec4 mv = modelViewMatrix*vec4(p,1.);
+      gl_Position = projectionMatrix*mv;
+      gl_PointSize = (2.0 + aR*3.0) * uPR * (6.0 / -mv.z);
+      vA = (0.35 + 0.65*(sin(uTime*1.3 + aR*40.)*0.5+0.5)) * smoothstep(40.0, 3.0, -mv.z);
+    }`,
+  fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord-0.5); float a = smoothstep(0.5,0.0,d); gl_FragColor = vec4(vec3(1.0,0.92,0.7)*a*vA*0.55, 1.0); }`
+});
+const motes = new THREE.Points(moteGeo, moteMat);
+motes.frustumCulled = false;
+scene.add(motes);
+
+// 足迹标记（显示蹄子着地点 —— 用来检查有没有打滑）
+const PRINT_MAX = 64;
+const printMesh = new THREE.InstancedMesh(new THREE.RingGeometry(0.03, 0.044, 28).rotateX(-PI / 2),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }), PRINT_MAX);
+printMesh.renderOrder = 20; printMesh.frustumCulled = false; printMesh.visible = false;
+const prints = Array.from({ length: PRINT_MAX }, () => ({ p: new V3(), t: 99, c: new THREE.Color() }));
+let printHead = 0;
+scene.add(printMesh);
+function addPrint(p, color) { const P = prints[printHead]; P.p.copy(p); P.p.y = 0.004; P.t = 0; P.c.copy(color); printHead = (printHead + 1) % PRINT_MAX; }
+const _pc = new THREE.Color();
+function updatePrints(dt) {
+  prints.forEach((P, i) => {
+    P.t += dt;
+    const a = Math.max(0, 1 - P.t / 4.0);
+    _pp.copy(P.p); _ps.setScalar(a > 0 ? 1 : 0.0001); _pq.identity();
+    printMesh.setMatrixAt(i, _pm.compose(_pp, _pq, _ps));
+    printMesh.setColorAt(i, _pc.copy(P.c).multiplyScalar(a));
+  });
+  printMesh.instanceMatrix.needsUpdate = true;
+  if (printMesh.instanceColor) printMesh.instanceColor.needsUpdate = true;
+}
+
+// ---------------------------------------------------------------------------
+//  鹿的皮毛材质：顶点色打底 + 着色器里画梅花斑点 + 绒毛颗粒 + 丝绒光泽
+// ---------------------------------------------------------------------------
+function makeCoatMaterial(params = {}) {
+  const m = new THREE.MeshPhysicalMaterial(Object.assign({
+    vertexColors: true, roughness: 0.78, metalness: 0,
+    sheen: 0.9, sheenRoughness: 0.42, sheenColor: new THREE.Color(0xe0b48a),
+  }, params));
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec2 aMask;\nvarying vec2 vMask;\nvarying vec3 vRest;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMask = aMask; vRest = position;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec2 vMask; varying vec3 vRest;
+        vec3 h33(vec3 p){ p = vec3(dot(p,vec3(127.1,311.7,74.7)), dot(p,vec3(269.5,183.3,246.1)), dot(p,vec3(113.5,271.9,124.6))); return fract(sin(p)*43758.5453); }
+        float h31(vec3 p){ return fract(sin(dot(p,vec3(17.13,113.71,57.37)))*43758.5453); }
+        float vn3(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+          return mix(mix(mix(h31(i),h31(i+vec3(1,0,0)),f.x), mix(h31(i+vec3(0,1,0)),h31(i+vec3(1,1,0)),f.x), f.y),
+                     mix(mix(h31(i+vec3(0,0,1)),h31(i+vec3(1,0,1)),f.x), mix(h31(i+vec3(0,1,1)),h31(i+vec3(1,1,1)),f.x), f.y), f.z); }
+        vec2 worley(vec3 p){ vec3 i=floor(p), f=fract(p); float md=9.0, id=0.0;
+          for(int z=-1;z<=1;z++) for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){
+            vec3 g=vec3(float(x),float(y),float(z)); vec3 o=h33(i+g); vec3 r=g+o*0.8+0.1-f; float d=dot(r,r);
+            if(d<md){ md=d; id=h31(i+g); } }
+          return vec2(sqrt(md), id); }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        {
+          vec3 rp = vRest;
+          if (vMask.x + vMask.y > 0.001) {
+            vec2 w = worley(rp*vec3(12.5,15.0,15.0));
+            float rad = 0.20 + 0.11*w.y;
+            float spot = (1.0 - smoothstep(rad-0.05, rad+0.025, w.x)) * step(0.18, w.y);
+            float lx = fract(rp.x*13.5+0.25)-0.5;
+            float lz = (abs(rp.z)-0.052)*13.5;
+            float ls = 1.0 - smoothstep(0.19, 0.29, length(vec2(lx*1.15, lz)));
+            float sAmt = clamp(spot*vMask.x + ls*vMask.y, 0.0, 1.0);
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.80,0.72,0.58), sAmt*0.88);
+          }
+          float g = vn3(rp*vec3(210.0,70.0,210.0))*0.55 + vn3(rp*38.0)*0.45;
+          diffuseColor.rgb *= 0.86 + 0.26*g;
+        }`);
+  };
+  return m;
+}
+const coatMat = makeCoatMaterial();
+const hoofMat = new THREE.MeshStandardMaterial({ color: 0x19130f, roughness: 0.38, metalness: 0.0 });
+const noseMat = new THREE.MeshPhysicalMaterial({ color: 0x0d0b0a, roughness: 0.28, clearcoat: 0.6, clearcoatRoughness: 0.25 });
+const eyeMat = new THREE.MeshPhysicalMaterial({ color: 0x0a0605, roughness: 0.05, clearcoat: 1.0, clearcoatRoughness: 0.02 });
+const antlerMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0 });
+const earInMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.BackSide });
+
+// ---------------------------------------------------------------------------
+//  放样（loft）几何体：沿一串控制点生成椭圆截面的管体，可带蒙皮权重
+//  cp: { p:V3, w(半宽), up(上/前缘), dn(下/后缘), off(中心偏移), b(骨骼序号) }
+// ---------------------------------------------------------------------------
+const catm = (a, b, c, d, t) => { const t2 = t * t, t3 = t2 * t; return 0.5 * ((2 * b) + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3); };
+function buildLoft(cps, opt = {}) {
+  const N = opt.radial || 32, dens = opt.density || 90, e = opt.sq || 1.0;
+  const lat0 = opt.lateral || new V3(0, 0, 1);
+  const n = cps.length;
+  const pts = cps.map(c => c.p);
+  const curve = opt.path === 'spline' ? new THREE.CatmullRomCurve3(pts, false, 'centripetal') : null;
+  // 多段线切线：关节处取相邻两段平均
+  const segDir = []; for (let i = 0; i < n - 1; i++) segDir.push(pts[i + 1].clone().sub(pts[i]).normalize());
+  const cpTan = pts.map((_, i) => {
+    const a = segDir[Math.max(0, i - 1)], b = segDir[Math.min(n - 2, i)];
+    return a.clone().add(b).normalize();
+  });
+  const prof = (k, t, key) => {
+    const g = i => cps[clamp(i, 0, n - 1)][key] ?? 0;
+    return catm(g(k - 1), g(k), g(k + 1), g(k + 2), t);
+  };
+  const stations = [];
+  for (let k = 0; k < n - 1; k++) {
+    const len = pts[k].distanceTo(pts[k + 1]);
+    const m = Math.max(2, Math.ceil(len * dens * (cps[k].dens || 1)));
+    for (let s = 0; s < m; s++) {
+      const t = s / m;
+      stations.push({ k, t });
+    }
+  }
+  stations.push({ k: n - 2, t: 1 });
+  const P = [], SI = [], SW = [], INFO = [];
+  const L = new V3(), U = new V3(), T = new V3(), C = new V3(), tmp = new V3();
+  for (const st of stations) {
+    const { k, t } = st;
+    if (curve) {
+      const u = (k + t) / (n - 1);
+      C.copy(curve.getPoint(u)); T.copy(curve.getTangent(u));
+    } else {
+      C.copy(pts[k]).lerp(pts[k + 1], t);
+      T.copy(cpTan[k]).lerp(cpTan[k + 1], sm(t)).normalize();
+    }
+    L.copy(lat0).addScaledVector(T, -lat0.dot(T)).normalize();
+    U.crossVectors(L, T).normalize();
+    const w = prof(k, t, 'w'), up = prof(k, t, 'up'), dn = prof(k, t, 'dn'), off = prof(k, t, 'off'), lo = prof(k, t, 'lo');
+    // 骨骼权重
+    const b0 = cps[k].b ?? 0, b1 = cps[k + 1].b ?? 0;
+    const wt = b0 === b1 ? 0 : sm(t);
+    for (let j = 0; j < N; j++) {
+      const a = -PI / 2 + j / N * TAU;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const cx = Math.sign(ca) * Math.pow(Math.abs(ca), e), sy = Math.sign(sa) * Math.pow(Math.abs(sa), e);
+      tmp.copy(C).addScaledVector(L, w * cx + lo).addScaledVector(U, off + (sy >= 0 ? up : dn) * sy);
+      P.push(tmp.x, tmp.y, tmp.z);
+      SI.push(b0, b1, 0, 0); SW.push(1 - wt, wt, 0, 0);
+      INFO.push({ u: k + t, a, sy, cx });
+    }
+    st.c = C.clone(); st.t3 = T.clone(); st.w = w;
+  }
+  const rings = stations.length;
+  const idx = [];
+  for (let r = 0; r < rings - 1; r++) for (let j = 0; j < N; j++) {
+    const a = r * N + j, b = r * N + (j + 1) % N, c = (r + 1) * N + j, d = (r + 1) * N + (j + 1) % N;
+    idx.push(a, c, b, b, c, d);
+  }
+  // 封口
+  const addCap = (st, ringStart, isEnd, bone) => {
+    const ci = P.length / 3;
+    const cpos = st.c.clone().addScaledVector(st.t3, (isEnd ? 1 : -1) * st.w * 0.25);
+    P.push(cpos.x, cpos.y, cpos.z); SI.push(bone, 0, 0, 0); SW.push(1, 0, 0, 0); INFO.push({ u: isEnd ? n - 1 : 0, a: 0, sy: 0, cx: 0, cap: true });
+    for (let j = 0; j < N; j++) {
+      const a = ringStart + j, b = ringStart + (j + 1) % N;
+      if (isEnd) idx.push(ci, b, a); else idx.push(ci, a, b);
+    }
+  };
+  addCap(stations[0], 0, false, cps[0].b ?? 0);
+  addCap(stations[rings - 1], (rings - 1) * N, true, cps[n - 1].b ?? 0);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  if (opt.skin) {
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4));
+    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
+  }
+  // 顶点颜色 & 斑点遮罩
+  const col = new Float32Array(P.length), mask = new Float32Array(P.length / 3 * 2);
+  const pp = new V3(), nn = new V3(), cc = new THREE.Color();
+  const pa = g.attributes.position, na = g.attributes.normal;
+  for (let i = 0; i < pa.count; i++) {
+    pp.fromBufferAttribute(pa, i); nn.fromBufferAttribute(na, i);
+    const res = opt.paint ? opt.paint(pp, nn, INFO[i], cc) : null;
+    col[i * 3] = cc.r; col[i * 3 + 1] = cc.g; col[i * 3 + 2] = cc.b;
+    if (res) { mask[i * 2] = res[0]; mask[i * 2 + 1] = res[1]; }
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.setAttribute('aMask', new THREE.BufferAttribute(mask, 2));
+  return g;
+}
+
+// 2D 小工具（腿的矢状面内计算）
+const dirA = (deg) => new THREE.Vector2(Math.cos(deg * DEG), Math.sin(deg * DEG));
+
+// ---------------------------------------------------------------------------
+//  梅花鹿模型：骨架 + 蒙皮躯干/颈 + 刚性头部 + 四条蒙皮腿 + 偶蹄
+//  坐标约定（鹿自身）：+X 向前，+Y 向上，+Z 为鹿的右侧；地面 y = 0
+// ---------------------------------------------------------------------------
+const COL = {
+  coat: srgb(0x91491f), coatDark: srgb(0x5e2d12), stripe: srgb(0x2e170a), belly: srgb(0xe9dcc4),
+  cream: srgb(0xd9c29d), leg: srgb(0x8f5a36), legLow: srgb(0xa58566), legInner: srgb(0xdac7a8),
+  face: srgb(0x7d5233), faceDark: srgb(0x51321d), muzzle: srgb(0xeee6d8), rump: srgb(0xf6f1e8),
+  rumpRim: srgb(0x24160c), throat: srgb(0xcaa57f),
+};
+const mix3 = (out, c, t) => out.lerp(c, clamp(t, 0, 1));
+
+const deer = {};
+{
+  const D = deer;
+  // ---- 关键点（静止姿态）----
+  D.bodyPivot = new V3(0, 0.80, 0);
+  D.hindPivot = new V3(-0.08, 0.80, 0);
+  D.frontPivot = new V3(0.08, 0.80, 0);
+  D.neckPts = [new V3(0.47, 0.90, 0), new V3(0.53, 1.02, 0), new V3(0.585, 1.135, 0), new V3(0.63, 1.24, 0)];
+  D.headPivot = new V3(0.665, 1.32, 0);
+  D.headAx = new V3(Math.cos(-48 * DEG), Math.sin(-48 * DEG), 0);       // 头部轴线（指向鼻尖）
+  D.headUp = new V3(-D.headAx.y, D.headAx.x, 0);                          // 头部背侧方向
+  D.tailPts = [new V3(-0.60, 0.875, 0), new V3(-0.65, 0.825, 0)];
+  // 腿的骨段长度
+  D.hindL = { f: 0.24, t: 0.29, m: 0.235, delta: -22 * DEG };
+  D.foreL = { h: 0.19, r: 0.25, c: 0.18, k0: 1.0 * DEG };
+  D.toe = { dx: 0.075 };   // 球节(F) → 蹄尖(T) 的水平距离
+
+  // ---- 骨骼 ----
+  const bones = [];
+  const mk = (name, rest, parent) => {
+    const b = new THREE.Bone(); b.name = name; b.userData.rest = rest.clone();
+    if (parent) { b.position.copy(rest).sub(parent.userData.rest); parent.add(b); } else b.position.copy(rest);
+    b.userData.i = bones.length; bones.push(b); return b;
+  };
+  D.root = mk('root', new V3(0, 0, 0), null);
+  D.body = mk('body', D.bodyPivot, D.root);
+  D.hindB = mk('hind', D.hindPivot, D.body);
+  D.frontB = mk('front', D.frontPivot, D.body);
+  D.neck = []; let par = D.frontB;
+  D.neckPts.forEach((p, i) => { par = mk('neck' + i, p, par); D.neck.push(par); });
+  D.head = mk('head', D.headPivot, par);
+  D.tail0 = mk('tail0', D.tailPts[0], D.hindB);
+  D.tail1 = mk('tail1', D.tailPts[1], D.tail0);
+  D.legRig = new THREE.Group();
+  scene.add(D.root, D.legRig);
+  // 颈椎每节的“背侧”轴（用于侧弯）
+  D.neckDors = D.neck.map((b, i) => {
+    const a = b.userData.rest, c = (i < 3 ? D.neck[i + 1].userData.rest : D.headPivot);
+    const t = c.clone().sub(a).normalize();
+    return new V3(0, 0, 1).cross(t).normalize();
+  });
+
+  // ---- 腿：静止姿态由 IK 求出，保证与运行时一致 ----
+  const ang = v => Math.atan2(v.y, v.x);
+  const V2 = THREE.Vector2;
+  const rot2 = (v, a) => new V2(v.x * Math.cos(a) - v.y * Math.sin(a), v.x * Math.sin(a) + v.y * Math.cos(a));
+  const hl = D.hindL, fl = D.foreL;
+  { const c = new V2(hl.f, 0).add(new V2(Math.cos(hl.delta), Math.sin(hl.delta)).multiplyScalar(hl.m)); hl.va = c.length(); hl.gam = Math.atan2(c.y, c.x); hl.max = hl.va + hl.t; }
+  fl.virt = (kappa) => { const c = new V2(fl.r, 0).add(new V2(Math.cos(fl.k0 - kappa), Math.sin(fl.k0 - kappa)).multiplyScalar(fl.c)); return { len: c.length(), gam: Math.atan2(c.y, c.x) }; };
+  fl.max = fl.h + fl.virt(0).len;
+  D.legs = [];
+  const legDefs = [
+    { name: 'LF', fore: true, side: -1 }, { name: 'RF', fore: true, side: 1 },
+    { name: 'LH', fore: false, side: -1 }, { name: 'RH', fore: false, side: 1 },
+  ];
+  for (const ld of legDefs) {
+    const L = Object.assign({}, ld);
+    const z = ld.side * (ld.fore ? 0.088 : 0.092);
+    L.z = z;
+    let J;   // 2D 关节
+    if (ld.fore) {
+      const P = new V2(0.25, 0.88), S = new V2(0.37, 0.655), F = new V2(0.232, 0.097);
+      const v0 = fl.virt(0), Dd = F.clone().sub(S).length();
+      const beta = -Math.acos(clamp((fl.h * fl.h + Dd * Dd - v0.len * v0.len) / (2 * fl.h * Dd), -1, 1));
+      const th = ang(F.clone().sub(S)) + beta;
+      const E = S.clone().add(new V2(Math.cos(th), Math.sin(th)).multiplyScalar(fl.h));
+      const rA = ang(F.clone().sub(E)) - v0.gam;
+      const K = E.clone().add(new V2(Math.cos(rA), Math.sin(rA)).multiplyScalar(fl.r));
+      J = { P, S, E, K, F };
+      L.chain = ['P', 'S', 'E', 'K', 'F'];
+      L.restSP = S.clone().sub(P);
+    } else {
+      const H = new V2(-0.38, 0.765), F = new V2(-0.395, 0.097);
+      const Dd = F.clone().sub(H).length();
+      const beta = Math.acos(clamp((hl.va * hl.va + Dd * Dd - hl.t * hl.t) / (2 * hl.va * Dd), -1, 1));
+      const va = ang(F.clone().sub(H)) + beta, fa = va - hl.gam;
+      const S = H.clone().add(new V2(Math.cos(fa), Math.sin(fa)).multiplyScalar(hl.f));
+      const M = H.clone().add(new V2(Math.cos(va), Math.sin(va)).multiplyScalar(hl.va));
+      const K = S.clone().add(F.clone().sub(M));
+      J = { H, S, K, F };
+      L.chain = ['H', 'S', 'K', 'F'];
+    }
+    const F = J.F;
+    J.T = new V2(F.x + D.toe.dx, 0);                       // 蹄尖
+    J.C = new V2(J.T.x - 0.036, 0.036);                     // 蹄冠
+    L.J2 = J;
+    L.rest = {}; for (const k in J) L.rest[k] = new V3(J[k].x, J[k].y, z);
+    L.footVec = new V2(D.toe.dx, -F.y);                     // F→T（静止、平放）
+    L.a0 = Math.atan2(L.footVec.y, L.footVec.x);            // 蹄组件静止角
+    L.lenFT = L.footVec.length();
+    const cannon = J.F.clone().sub(J.K);
+    L.r0 = L.a0 - Math.atan2(cannon.y, cannon.x);            // 蹄相对炮骨的静止夹角
+    // 骨骼（平铺在 legRig 下，世界变换每帧直接写入）
+    const segs = ld.fore ? [['scap', 'P', 'S'], ['hum', 'S', 'E'], ['rad', 'E', 'K'], ['meta', 'K', 'F'], ['foot', 'F', 'T']]
+      : [['fem', 'H', 'S'], ['tib', 'S', 'K'], ['meta', 'K', 'F'], ['foot', 'F', 'T']];
+    L.bones = {};
+    for (const [bn, a, b] of segs) {
+      const bone = new THREE.Bone(); bone.name = ld.name + '_' + bn;
+      bone.position.copy(L.rest[a]); bone.userData.rest = L.rest[a].clone();
+      bone.userData.i = bones.length; bones.push(bone);
+      D.legRig.add(bone);
+      const d0 = L.rest[b].clone().sub(L.rest[a]).normalize();
+      bone.userData.d0 = d0;
+      // 静止基：X=骨方向，Z=侧向，Y=Z×X
+      const z0 = new V3(0, 0, 1), y0 = new V3().crossVectors(z0, d0);
+      bone.userData.B0inv = new M4().makeBasis(d0, y0, z0).transpose();
+      L.bones[bn] = bone;
+    }
+    L.attach = ld.fore ? D.frontB : D.hindB;
+    D.legs.push(L);
+  }
+  D.bones = bones;
+
+  // ---- 着色函数 ----
+  const rumpPatch = (p, n) => {   // 臀部白斑 + 黑色描边
+    const rr = Math.hypot((p.y - 0.80) / 0.115, p.z / 0.10);
+    const back = sstep(-0.05, -0.45, n.x) * sstep(-0.42, -0.56, p.x);
+    return { white: back * sstep(1.02, 0.9, rr), rim: back * sstep(0.92, 1.0, rr) * sstep(1.25, 1.08, rr) };
+  };
+  const throatDir = new V3(0.907, -0.421, 0);
+  const paintBody = (p, n, info, out) => {
+    out.copy(COL.coat);
+    const top = sstep(0.45, 0.95, n.y);
+    mix3(out, COL.coatDark, top * 0.45);
+    const stripe = sstep(0.04, 0.012, Math.abs(p.z)) * sstep(0.55, 0.85, n.y) * sstep(-0.66, -0.55, p.x);
+    mix3(out, COL.stripe, stripe * 0.85);
+    const neck = sstep(0.42, 0.52, p.x) * sstep(0.85, 0.95, p.y);
+    const belly = sstep(-0.2, -0.62, n.y) * (1 - neck);
+    mix3(out, COL.belly, belly);
+    const thr = neck * sstep(0.2, 0.75, n.dot(throatDir));
+    mix3(out, COL.throat, thr * 0.8);
+    mix3(out, COL.coatDark, neck * sstep(0.3, 0.8, -n.dot(throatDir)) * 0.35);   // 颈背鬃毛略深
+    const rp = rumpPatch(p, n);
+    mix3(out, COL.rump, rp.white); mix3(out, COL.rumpRim, rp.rim * 0.9);
+    const flank = sstep(-0.18, 0.2, n.y) * (1 - sstep(0.86, 0.97, n.y)) * sstep(-0.62, -0.5, p.x) * (1 - sstep(0.32, 0.47, p.x));
+    const spots = flank * (1 - rp.white) * (1 - rp.rim) * (1 - stripe);
+    const line = sstep(0.62, 0.86, n.y) * sstep(-0.55, -0.45, p.x) * (1 - sstep(0.30, 0.4, p.x)) * (1 - stripe);
+    return [spots, line];
+  };
+
+  // ---- 躯干 + 颈（一整条蒙皮放样）----
+  const bi = b => b.userData.i;
+  const cp = (x, y, w, up, dn, b, extra = {}) => Object.assign({ p: new V3(x, y, 0), w, up, dn, b: bi(b) }, extra);
+  const torsoCps = [
+    cp(-0.665, 0.83, 0.02, 0.02, 0.025, D.hindB),
+    cp(-0.64, 0.83, 0.075, 0.075, 0.105, D.hindB),
+    cp(-0.57, 0.835, 0.13, 0.115, 0.165, D.hindB),
+    cp(-0.45, 0.825, 0.16, 0.135, 0.19, D.hindB),
+    cp(-0.29, 0.81, 0.162, 0.155, 0.20, D.hindB),
+    cp(-0.11, 0.805, 0.178, 0.17, 0.24, D.hindB),
+    cp(0.07, 0.805, 0.183, 0.177, 0.27, D.frontB),
+    cp(0.23, 0.805, 0.168, 0.19, 0.282, D.frontB),
+    cp(0.36, 0.815, 0.142, 0.17, 0.262, D.frontB),
+    cp(0.45, 0.86, 0.105, 0.135, 0.20, D.frontB),
+    cp(0.50, 0.955, 0.082, 0.098, 0.118, D.neck[0]),
+    cp(0.555, 1.075, 0.068, 0.078, 0.088, D.neck[1]),
+    cp(0.605, 1.19, 0.058, 0.066, 0.073, D.neck[2]),
+    cp(0.645, 1.285, 0.052, 0.058, 0.064, D.neck[3]),
+    cp(0.675, 1.35, 0.042, 0.046, 0.05, D.head),
+    cp(0.69, 1.385, 0.018, 0.018, 0.02, D.head),
+  ];
+  const bodyGeo = buildLoft(torsoCps, { radial: 56, density: 70, path: 'spline', skin: true, sq: 0.92, paint: paintBody });
+  D.meshes = [];
+  const addSkinned = (geo, mat) => {
+    const m = new THREE.SkinnedMesh(geo, mat);
+    m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false;
+    scene.add(m); D.meshes.push(m); return m;
+  };
+  D.bodyMesh = addSkinned(bodyGeo, coatMat);
+
+  // ---- 尾巴 ----
+  const tailCps = [
+    { p: new V3(-0.585, 0.89, 0), w: 0.02, up: 0.014, dn: 0.014, b: bi(D.tail0) },
+    { p: new V3(-0.61, 0.87, 0), w: 0.032, up: 0.017, dn: 0.02, b: bi(D.tail0) },
+    { p: new V3(-0.655, 0.825, 0), w: 0.034, up: 0.016, dn: 0.022, b: bi(D.tail1) },
+    { p: new V3(-0.69, 0.78, 0), w: 0.026, up: 0.012, dn: 0.016, b: bi(D.tail1) },
+    { p: new V3(-0.70, 0.765, 0), w: 0.008, up: 0.006, dn: 0.006, b: bi(D.tail1) },
+  ];
+  const tailGeo = buildLoft(tailCps, { radial: 18, density: 140, path: 'spline', skin: true, paint: (p, n, info, out) => {
+    out.copy(COL.rump); mix3(out, COL.stripe, sstep(-0.2, 0.3, n.y) * sstep(0.03, 0.01, Math.abs(p.z)) + sstep(0.2, 0.6, n.y) * 0.6); return null; } });
+  addSkinned(tailGeo, coatMat);
+
+  // ---- 腿 ----
+  for (const L of D.legs) {
+    const r = L.rest, s = L.side, A = L.attach, B = L.bones;
+    const along = (a, b, t) => r[a].clone().lerp(r[b], t);
+    const c = (p, w, up, dn, off, bone, extra = {}) => Object.assign({ p, w, up, dn, off, b: bi(bone) }, extra);
+    let cps;
+    if (L.fore) {
+      cps = [
+        c(r.P.clone().add(new V3(-0.025, 0.07, -s * 0.03)), 0.03, 0.05, 0.05, 0, A),
+        c(r.P.clone().add(new V3(0, 0, -s * 0.012)), 0.045, 0.075, 0.07, 0, A),
+        c(along('P', 'S', 0.5), 0.058, 0.07, 0.075, 0.0, B.scap),
+        c(along('P', 'S', 0.92), 0.068, 0.075, 0.08, 0.0, B.scap),
+        c(along('S', 'E', 0.45), 0.068, 0.06, 0.095, -0.012, B.hum),
+        c(along('S', 'E', 0.88), 0.052, 0.045, 0.075, -0.01, B.hum),
+        c(along('E', 'K', 0.1), 0.040, 0.046, 0.046, 0.004, B.rad),
+        c(along('E', 'K', 0.5), 0.028, 0.032, 0.026, 0.003, B.rad),
+        c(along('E', 'K', 0.88), 0.021, 0.022, 0.019, 0, B.rad),
+        c(r.K.clone(), 0.024, 0.026, 0.021, 0, B.meta),
+        c(along('K', 'F', 0.15), 0.019, 0.019, 0.018, 0, B.meta),
+        c(along('K', 'F', 0.6), 0.016, 0.017, 0.016, 0, B.meta),
+        c(along('K', 'F', 0.92), 0.019, 0.02, 0.022, -0.002, B.meta),
+        c(r.F.clone(), 0.021, 0.021, 0.027, -0.004, B.foot),
+        c(along('F', 'C', 0.5), 0.017, 0.016, 0.018, 0, B.foot),
+        c(r.C.clone().add(new V3(0.002, -0.004, 0)), 0.019, 0.019, 0.019, 0, B.foot),
+        c(r.C.clone().add(new V3(0.006, -0.012, 0)), 0.01, 0.01, 0.01, 0, B.foot),
+      ];
+    } else {
+      cps = [
+        c(r.H.clone().add(new V3(-0.03, 0.12, -s * 0.035)), 0.05, 0.07, 0.08, 0, A),
+        c(r.H.clone().add(new V3(-0.01, 0.045, -s * 0.012)), 0.08, 0.10, 0.15, -0.01, A),
+        c(along('H', 'S', 0.25), 0.088, 0.10, 0.165, -0.03, B.fem),
+        c(along('H', 'S', 0.6), 0.082, 0.088, 0.15, -0.045, B.fem),
+        c(along('H', 'S', 0.95), 0.064, 0.066, 0.105, -0.025, B.fem),
+        c(along('S', 'K', 0.18), 0.054, 0.058, 0.085, -0.012, B.tib),
+        c(along('S', 'K', 0.5), 0.041, 0.042, 0.055, -0.006, B.tib),
+        c(along('S', 'K', 0.85), 0.027, 0.026, 0.036, -0.008, B.tib),
+        c(r.K.clone(), 0.026, 0.026, 0.04, -0.01, B.meta),
+        c(along('K', 'F', 0.14), 0.021, 0.024, 0.023, 0, B.meta),
+        c(along('K', 'F', 0.6), 0.017, 0.019, 0.018, 0, B.meta),
+        c(along('K', 'F', 0.92), 0.019, 0.021, 0.022, -0.002, B.meta),
+        c(r.F.clone(), 0.021, 0.021, 0.027, -0.004, B.foot),
+        c(along('F', 'C', 0.5), 0.017, 0.016, 0.018, 0, B.foot),
+        c(r.C.clone().add(new V3(0.002, -0.004, 0)), 0.019, 0.019, 0.019, 0, B.foot),
+        c(r.C.clone().add(new V3(0.006, -0.012, 0)), 0.01, 0.01, 0.01, 0, B.foot),
+      ];
+    }
+    const paintLeg = (p, n, info, out) => {
+      out.copy(COL.leg);
+      mix3(out, COL.coat, sstep(0.5, 0.66, p.y));
+      mix3(out, COL.legLow, sstep(0.46, 0.3, p.y) * 0.85);
+      const inner = sstep(0.1, 0.65, -n.z * s);
+      mix3(out, COL.legInner, inner * (0.55 + 0.35 * sstep(0.62, 0.4, p.y)));
+      mix3(out, COL.belly, sstep(-0.3, -0.75, n.y) * sstep(0.45, 0.6, p.y) * 0.7);
+      mix3(out, COL.coatDark, sstep(0.14, 0.09, p.y) * 0.5);                        // 球节附近颜色略深
+      const rp = rumpPatch(p, n);
+      mix3(out, COL.rump, rp.white); mix3(out, COL.rumpRim, rp.rim * 0.9);
+      const sp = sstep(0.58, 0.7, p.y) * sstep(-0.1, 0.4, n.y + 0.3) * (1 - rp.white) * sstep(0.2, 0.6, n.z * s);
+      return [sp * 0.8, 0];
+    };
+    const g = buildLoft(cps, { radial: 22, density: 130, path: 'poly', skin: true, paint: paintLeg, lateral: new V3(0, 0, 1) });
+    L.mesh = addSkinned(g, coatMat);
+    // 偶蹄（两瓣）+ 悬蹄
+    const shape = new THREE.Shape();
+    shape.moveTo(0.004, 0.0); shape.lineTo(-0.05, 0.0); shape.quadraticCurveTo(-0.062, 0.002, -0.062, 0.014);
+    shape.quadraticCurveTo(-0.06, 0.03, -0.05, 0.034); shape.lineTo(-0.03, 0.04); shape.quadraticCurveTo(-0.012, 0.03, 0.004, 0.0);
+    const hoofG = new THREE.ExtrudeGeometry(shape, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.0028, bevelSegments: 2, curveSegments: 6 });
+    hoofG.translate(0, 0.0028, -0.006);
+    const foot = B.foot;
+    for (const zs of [-1, 1]) {
+      const h = new THREE.Mesh(hoofG, hoofMat);
+      h.position.copy(r.T).sub(r.F); h.position.z += zs * 0.0098;
+      h.rotation.y = zs * 4 * DEG;
+      h.castShadow = true; foot.add(h);
+      const dc = new THREE.Mesh(new THREE.ConeGeometry(0.0055, 0.016, 8), hoofMat);
+      dc.position.set(-0.024, -0.012, zs * 0.011); dc.rotation.z = 2.4; foot.add(dc);
+    }
+  }
+
+  // ---- 头部（刚性，挂在 head 骨骼上）----
+  const hp = D.headPivot, ax = D.headAx, hu = D.headUp;
+  const hpt = (x, y, z = 0) => hp.clone().addScaledVector(ax, x).addScaledVector(hu, y).add(new V3(0, 0, z));
+  const hcp = (x, y, w, up, dn) => ({ p: hpt(x, y), w, up, dn, b: 0 });
+  const headCps = [
+    hcp(-0.04, -0.035, 0.016, 0.016, 0.02),
+    hcp(-0.018, -0.035, 0.046, 0.05, 0.056),
+    hcp(0.03, -0.035, 0.058, 0.056, 0.072),
+    hcp(0.075, -0.03, 0.057, 0.05, 0.064),
+    hcp(0.12, -0.03, 0.045, 0.041, 0.051),
+    hcp(0.165, -0.032, 0.035, 0.033, 0.04),
+    hcp(0.205, -0.034, 0.03, 0.029, 0.034),
+    hcp(0.24, -0.036, 0.028, 0.027, 0.031),
+    hcp(0.262, -0.038, 0.022, 0.021, 0.025),
+    hcp(0.275, -0.039, 0.008, 0.008, 0.01),
+  ];
+  const eyeC = [-1, 1].map(s => hpt(0.072, -0.004, s * 0.047));
+  const paintHead = (p, n, info, out) => {
+    const rel = p.clone().sub(hp);
+    const x = rel.dot(ax), yy = rel.dot(hu);
+    const nu = n.dot(hu);
+    out.copy(COL.face);
+    mix3(out, COL.faceDark, sstep(0.4, 0.9, nu) * sstep(0.0, 0.08, x) * 0.6);          // 额头、鼻梁较深
+    const eyeD = Math.min(p.distanceTo(eyeC[0]), p.distanceTo(eyeC[1]));
+    mix3(out, COL.cream, sstep(0.034, 0.02, eyeD) * 0.85);                          // 眼圈
+    mix3(out, COL.muzzle, sstep(0.19, 0.225, x) * sstep(0.35, -0.2, nu));            // 吻部白色
+    mix3(out, COL.muzzle, sstep(-0.2, -0.6, nu) * sstep(0.12, 0.2, x));              // 下颌
+    mix3(out, COL.throat, sstep(-0.3, -0.7, nu) * sstep(0.12, 0.02, x) * 0.8);
+    mix3(out, COL.faceDark, sstep(0.255, 0.27, x) * 0.6);
+    const gland = p.distanceTo(hpt(0.115, -0.03, Math.sign(p.z) * 0.046));           // 眶下腺
+    mix3(out, COL.faceDark, sstep(0.016, 0.006, gland) * 0.8);
+    return null;
+  };
+  const headGeo = buildLoft(headCps, { radial: 36, density: 160, path: 'spline', paint: paintHead });
+  const headMesh = new THREE.Mesh(headGeo, coatMat);
+  headMesh.position.copy(hp).negate();
+  headMesh.castShadow = true; headMesh.receiveShadow = true;
+  D.head.add(headMesh);
+  // 鼻镜
+  const noseG = new THREE.SphereGeometry(1, 20, 14);
+  noseG.scale(0.019, 0.022, 0.029);
+  const nose = new THREE.Mesh(noseG, noseMat);
+  nose.position.copy(hpt(0.262, -0.03)).sub(hp); nose.rotation.z = -48 * DEG; nose.castShadow = true;
+  D.head.add(nose);
+  // 眼睛
+  D.eyes = eyeC.map((c, i) => {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.0135, 18, 14), eyeMat);
+    e.position.copy(c).sub(hp);
+    e.scale.set(1, 0.85, 0.75);
+    e.rotation.z = -30 * DEG;
+    D.head.add(e); return e;
+  });
+  // 耳朵
+  const earGeo = (() => {
+    const NU = 12, NV = 9, P = [], idx = [], C = [];
+    const len = 0.135;
+    for (let i = 0; i <= NU; i++) {
+      const u = i / NU;
+      const hw = 0.011 * (1 - u) + 0.032 * Math.sin(PI * Math.pow(u, 0.82)) * (1 - 0.18 * u);
+      for (let j = 0; j <= NV; j++) {
+        const v = j / NV * 2 - 1;
+        const cup = 0.014 * (1 - v * v) * Math.sin(PI * Math.min(1, Math.pow(u, 0.6) * 0.95));
+        P.push(v * hw, u * len, -cup);
+        const edge = sstep(0.6, 1.0, Math.abs(v)) + sstep(0.85, 1.0, u);
+        const cc = COL.face.clone().lerp(COL.faceDark, clamp(edge, 0, 1) * 0.8);
+        C.push(cc.r, cc.g, cc.b);
+      }
+    }
+    for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) {
+      const a = i * (NV + 1) + j, b = a + 1, c2 = a + NV + 1, d = c2 + 1;
+      idx.push(a, b, c2, b, d, c2);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+    g.setAttribute('aMask', new THREE.Float32BufferAttribute(new Array(P.length / 3 * 2).fill(0), 2));
+    g.setIndex(idx); g.computeVertexNormals();
+    // 内侧颜色
+    const gi = g.clone();
+    const ci = gi.attributes.color;
+    for (let k = 0; k < ci.count; k++) {
+      const y = gi.attributes.position.getY(k) / len, x = Math.abs(gi.attributes.position.getX(k)) / 0.035;
+      const c3 = COL.belly.clone().lerp(srgb(0xb89a86), sstep(0.2, 0.9, y) * 0.5).lerp(COL.faceDark, sstep(0.75, 1.0, x) * 0.7);
+      ci.setXYZ(k, c3.r, c3.g, c3.b);
+    }
+    return [g, gi];
+  })();
+  D.ears = [-1, 1].map(s => {
+    const pivot = new THREE.Object3D();
+    pivot.position.copy(hpt(-0.004, 0.012, s * 0.036)).sub(hp);
+    const base = new THREE.Object3D();   // 静止朝向：向上、向外、略向后，开口朝前外
+    { const ye = new V3(-0.28, 0.72, s * 0.62).normalize(), ze0 = new V3(0.9, 0.05, s * 0.42);
+      const ze = ze0.addScaledVector(ye, -ze0.dot(ye)).normalize(), xe = new V3().crossVectors(ye, ze);
+      base.quaternion.setFromRotationMatrix(new M4().makeBasis(xe, ye, ze)); }
+    pivot.add(base);
+    const outer = new THREE.Mesh(earGeo[0], coatMat); outer.castShadow = true;
+    const inner = new THREE.Mesh(earGeo[1], earInMat);
+    base.add(outer, inner);
+    D.head.add(pivot);
+    return { pivot, base, s };
+  });
+  // 鹿角
+  const antlerCols = (g, base) => {
+    const p = g.attributes.position, c = new Float32Array(p.count * 3), v = new V3();
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i);
+      const t = clamp(v.distanceTo(base) / 0.42, 0, 1);
+      const cc = srgb(0x4a3624).lerp(srgb(0x9c8466), sstep(0.05, 0.6, t)).lerp(srgb(0xefe6d2), sstep(0.7, 1.0, t));
+      c.set([cc.r, cc.g, cc.b], i * 3);
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+    return g;
+  };
+  for (const s of [-1, 1]) {
+    const B0 = hpt(0.03, 0.022, s * 0.024);
+    const o = (x, y, z) => B0.clone().add(new V3(x, y, s * z));
+    const tube = (pts, r0, r1) => buildLoft(pts.map((p, i) => ({ p, w: lerp(r0, r1, Math.pow(i / (pts.length - 1), 0.8)), up: lerp(r0, r1, Math.pow(i / (pts.length - 1), 0.8)), dn: lerp(r0, r1, Math.pow(i / (pts.length - 1), 0.8)), b: 0 })),
+      { radial: 10, density: 160, path: 'spline', lateral: new V3(0.2, 0.3, 1).normalize() });
+    const parts = [
+      tube([o(0, -0.005, 0), o(-0.015, 0.06, 0.03), o(-0.05, 0.15, 0.07), o(-0.075, 0.25, 0.1), o(-0.07, 0.34, 0.12), o(-0.035, 0.42, 0.125)], 0.0145, 0.004),
+      tube([o(-0.012, 0.05, 0.026), o(0.04, 0.085, 0.05), o(0.1, 0.105, 0.07), o(0.14, 0.13, 0.08)], 0.009, 0.003),
+      tube([o(-0.074, 0.245, 0.098), o(-0.03, 0.3, 0.13), o(0.0, 0.35, 0.15)], 0.0075, 0.0028),
+      tube([o(-0.07, 0.335, 0.118), o(-0.105, 0.38, 0.125), o(-0.13, 0.43, 0.12)], 0.0065, 0.0025),
+    ];
+    for (const g of parts) {
+      antlerCols(g, B0);
+      const m = new THREE.Mesh(g, antlerMat);
+      m.position.copy(hp).negate(); m.castShadow = true;
+      D.head.add(m);
+    }
+    const burr = new THREE.Mesh(new THREE.TorusGeometry(0.0145, 0.004, 6, 14), antlerMat.clone());
+    burr.material.vertexColors = false; burr.material.color = srgb(0x4a3826);
+    burr.position.copy(o(-0.004, 0.012, 0.004)).sub(hp); burr.rotation.x = PI / 2; burr.rotation.y = s * 0.2;
+    D.head.add(burr);
+  }
+
+  // ---- 绑定骨架 ----
+  D.root.updateMatrixWorld(true); D.legRig.updateMatrixWorld(true);
+  D.skeleton = new THREE.Skeleton(bones);
+  for (const m of D.meshes) m.bind(D.skeleton, new M4());
+}
+
+// ---------------------------------------------------------------------------
+//  步态定义（腿序：LF, RF, LH, RH；相位 0 = 该脚着地瞬间）
+//   慢走：四拍侧对步 LH→LF→RH→RF；小跑：对角两拍；
+//   狂奔：横向袭步（后腿先后着地、再前腿，之后收拢腾空）；跳跃：后腿蹬地→长距离腾空→前腿落地
+// ---------------------------------------------------------------------------
+const GAITS = {
+  walk: {
+    name: '慢走', sub: '四拍侧对步 · 左后→左前→右后→右前', v: 0.95, f: 0.95,
+    duty: [0.64, 0.64, 0.65, 0.65], off: [0.25, 0.75, 0.0, 0.5],
+    lift: [0.075, 0.075, 0.06, 0.06], kappa: 62, fold: [58, 50], heel: 32, trail: [0.04, 0.06], early: [0.12, 0.1], scap: 0.33,
+    curve: (ph, o) => {
+      o[0] = 0.006 * Math.cos(TAU * 2 * (ph - 0.08)); o[1] = 0.008 * Math.cos(TAU * 2 * (ph - 0.33));
+      o[2] = 0; o[3] = 0.045 * Math.cos(TAU * 2 * (ph - 0.2)); o[4] = 0.018 * Math.sin(TAU * (ph - 0.12)); o[5] = 0.012 * Math.sin(TAU * (ph + 0.1));
+      return o;
+    },
+  },
+  trot: {
+    name: '小跑', sub: '对角步 · 左后+右前 / 右后+左前 同时着地', v: 2.8, f: 1.85,
+    duty: [0.40, 0.40, 0.42, 0.42], off: [0.5, 0.0, 0.0, 0.5],
+    lift: [0.15, 0.15, 0.12, 0.12], kappa: 98, fold: [85, 75], heel: 42, trail: [0.08, 0.1], early: [0.12, 0.12], scap: 0.36,
+    curve: (ph, o) => {
+      const b = 0.012 - 0.02 * Math.cos(TAU * 2 * (ph - 0.21));
+      o[0] = b; o[1] = b; o[2] = 0; o[3] = 0.02 * Math.cos(TAU * 2 * (ph - 0.3)); o[4] = 0.012 * Math.sin(TAU * ph); o[5] = 0.006 * Math.sin(TAU * ph);
+      return o;
+    },
+  },
+  gallop: {
+    name: '狂奔', sub: '横向袭步 · 后左→后右→前左→前右 → 收拢腾空', v: 8.6, f: 2.55,
+    duty: [0.24, 0.24, 0.25, 0.25], off: [0.30, 0.40, 0.0, 0.10],
+    lift: [0.27, 0.27, 0.22, 0.22], kappa: 118, fold: [105, 95], heel: 50, trail: [0.12, 0.16], early: [0.1, 0.08], scap: 0.46,
+    curve: (() => {
+      const c = cycCurve([[0.00, 0.03, -0.01, 0.10, 0.04], [0.14, 0.05, -0.05, 0.03, 0.08], [0.30, 0.01, -0.02, -0.08, 0.02], [0.44, -0.05, 0.03, -0.11, -0.06],
+        [0.58, -0.04, 0.05, -0.03, -0.10], [0.72, 0.02, 0.05, 0.08, -0.04], [0.86, 0.05, 0.02, 0.14, 0.02]]);
+      const t = [0, 0, 0, 0];
+      return (ph, o) => { c(ph, t); o[0] = t[0]; o[1] = t[1]; o[2] = t[2]; o[3] = t[3]; o[4] = 0.01 * Math.sin(TAU * ph); o[5] = 0; return o; };
+    })(),
+  },
+  leap: {
+    name: '跳跃', sub: '后腿齐蹬 → 长腾空 → 前腿依次落地 → 后腿收拢', v: 5.0, f: 0.8,
+    duty: [0.15, 0.15, 0.14, 0.14], off: [0.62, 0.67, 0.0, 0.05],
+    lift: [0.30, 0.30, 0.30, 0.30], kappa: 128, fold: [115, 105], heel: 52, trail: [0.18, 0.26], early: [0.2, 0.14], scap: 0.46,
+    curve: (() => {
+      const c = cycCurve([[0.00, -0.03, -0.07, 0.10, 0.06], [0.10, 0.00, -0.09, 0.04, 0.10], [0.19, 0.13, 0.00, -0.12, 0.14], [0.40, 0.36, 0.31, -0.10, -0.04],
+        [0.62, 0.04, 0.18, -0.03, -0.14], [0.72, -0.09, 0.06, 0.05, -0.04], [0.86, -0.03, -0.02, 0.12, 0.04]]);
+      const t = [0, 0, 0, 0];
+      return (ph, o) => { c(ph, t); o[0] = t[0]; o[1] = t[1]; o[2] = t[2]; o[3] = t[3]; o[4] = 0; o[5] = 0; return o; };
+    })(),
+  },
+};
+const GKEYS = ['walk', 'trot', 'gallop', 'leap'];
+const gaitFreq = (g, v) => { const G = GAITS[g]; return G.f * clamp(Math.pow(Math.max(v, 0.05) / G.v, 0.38), 0.55, 1.3); };
+
+// ---------------------------------------------------------------------------
+//  运动状态
+// ---------------------------------------------------------------------------
+const GF = { pos: new V3(), yaw: 0, fwd: new V3(1, 0, 0), right: new V3(0, 0, 1) };   // 地面参考系（随身体平移）
+const toWorld = (l, out) => out.set(GF.pos.x + GF.fwd.x * l.x + GF.right.x * l.z, l.y, GF.pos.z + GF.fwd.z * l.x + GF.right.z * l.z);
+const toLocal = (w, out) => { const dx = w.x - GF.pos.x, dz = w.z - GF.pos.z; return out.set(dx * GF.fwd.x + dz * GF.fwd.z, w.y, dx * GF.right.x + dz * GF.right.z); };
+const UPV = new V3(0, 1, 0);
+
+const loco = {
+  speed: 0, targetV: 0, Phi: 0, f: 0.95, idle: true, stopping: true,
+  W: { walk: 1, trot: 0, gallop: 0, leap: 0 },
+  P: { duty: [0, 0, 0, 0], off: [0, 0, 0, 0], lift: [0, 0, 0, 0], kappa: 0, fold: [0, 0], heel: 0, trail: [0, 0], early: [0, 0], scap: 0.33 },
+  feet: [],
+};
+const PRINT_COL = [srgb(0xffc36b), srgb(0xff7f6b), srgb(0x7fd4ff), srgb(0x8f9bff)];
+for (const L of deer.legs) {
+  const T = L.rest.T.clone(), F = L.rest.F.clone();
+  loco.feet.push({
+    L, stance: true, settled: true, T, F, a: L.a0, heel: 0, phi: 0, cb: 0, s: 0, rem0: 1, rate: 0,
+    liftRel: new V3(), liftA: L.a0, liftHeel: 0,
+    nT: new V3(T.x, 0, T.z), nF: new V3(F.x, F.y, F.z),            // 中立位置（地面参考系）
+    hist: [],
+  });
+}
+// 初始相位：按慢走步态
+loco.feet.forEach((ft, i) => { ft.phi = GAITS.walk.off[i]; ft.cb = 0; });
+
+function blendGaitParams() {
+  const P = loco.P, W = loco.W;
+  P.kappa = 0; P.heel = 0; P.scap = 0;
+  for (let k = 0; k < 2; k++) { P.fold[k] = 0; P.trail[k] = 0; P.early[k] = 0; }
+  for (let i = 0; i < 4; i++) {
+    let d = 0, l = 0, sx = 0, sy = 0;
+    for (const g of GKEYS) {
+      const w = W[g]; if (w <= 0) continue;
+      const G = GAITS[g];
+      d += w * G.duty[i]; l += w * G.lift[i];
+      sx += w * Math.cos(TAU * G.off[i]); sy += w * Math.sin(TAU * G.off[i]);
+    }
+    P.duty[i] = d; P.lift[i] = l; P.off[i] = Math.atan2(sy, sx) / TAU;
+  }
+  for (const g of GKEYS) {
+    const w = W[g]; if (w <= 0) continue;
+    const G = GAITS[g];
+    P.kappa += w * G.kappa * DEG; P.heel += w * G.heel * DEG; P.scap += w * G.scap;
+    for (let k = 0; k < 2; k++) { P.fold[k] += w * G.fold[k] * DEG; P.trail[k] += w * G.trail[k]; P.early[k] += w * G.early[k]; }
+  }
+}
+
+// 2 段 IK 辅助：在包含 A、T、且最接近 nAxis 法向的平面内求中间关节
+const _d = new V3(), _e = new V3(), _n = new V3(), _q = new QT(), _t1 = new V3(), _t2 = new V3();
+function legPlane(A, T, nAxis) {
+  _d.subVectors(T, A); const D = _d.length(); _d.multiplyScalar(1 / D);
+  _n.copy(nAxis).addScaledVector(_d, -nAxis.dot(_d)).normalize();
+  _e.crossVectors(_n, _d);
+  return D;
+}
+const rotAbout = (v, axis, ang, out) => out.copy(v).applyQuaternion(_q.setFromAxisAngle(axis, ang));
+
+// 写骨骼世界变换：X 轴对准骨方向，Z 轴尽量对准腿平面法向
+const _bx = new V3(), _by = new V3(), _bz = new V3(), _bm = new M4();
+function setBone(bone, pos, dir, nrm) {
+  _bx.copy(dir).normalize();
+  _bz.copy(nrm).addScaledVector(_bx, -nrm.dot(_bx)).normalize();
+  _by.crossVectors(_bz, _bx);
+  _bm.makeBasis(_bx, _by, _bz).multiply(bone.userData.B0inv);
+  bone.position.copy(pos);
+  bone.quaternion.setFromRotationMatrix(_bm);
+}
+
+// 平面角（腿平面：以行进方向为前，竖直向上为上）
+const planeDir = (a, out) => out.copy(GF.fwd).multiplyScalar(Math.cos(a)).addScaledVector(UPV, Math.sin(a));
+const planeAng = (v) => Math.atan2(v.y, v.x * GF.fwd.x + v.z * GF.fwd.z);
+
+// 求解一条腿：返回各关节世界坐标，并写入骨骼
+const _A = new V3(), _S = new V3(), _E = new V3(), _K = new V3(), _St = new V3(), _M = new V3(), _P = new V3();
+const _v1 = new V3(), _v2 = new V3(), _v3 = new V3(), _loc = new V3(), _fl = new V3();
+const _bodyRight = new V3();
+function solveLeg(ft, kappa, scapK) {
+  const L = ft.L, B = L.bones, F = ft.F;
+  _bodyRight.setFromMatrixColumn(deer.body.matrixWorld, 2).normalize();
+  if (L.fore) {
+    const fb = deer.frontB, fr = fb.userData.rest;
+    // 肩胛骨：绕上端支点随腿摆动而旋转（增加步幅），前肢可在胸廓“吊带”中上下滑动
+    const Pl = _v1.copy(L.rest.P).sub(fr);
+    _fl.copy(F); fb.worldToLocal(_fl);
+    const restA = Math.atan2(L.rest.F.y - L.rest.P.y, L.rest.F.x - L.rest.P.x);
+    const curA = Math.atan2(_fl.y - Pl.y, _fl.x - Pl.x);
+    const alpha = clamp((curA - restA) * scapK, -0.42, 0.42);
+    const sp = L.restSP, ca = Math.cos(alpha), sa = Math.sin(alpha);
+    _loc.set(Pl.x + sp.x * ca - sp.y * sa, Pl.y + sp.x * sa + sp.y * ca, Pl.z);
+    const vl = L.fore ? deerLegs.virt(kappa) : null;
+    const maxR = deerLegs.fl.h + vl.len;
+    let dist = _v2.copy(_fl).sub(_loc).length();
+    const sling = clamp(dist - 0.985 * maxR, 0, 0.035);
+    _loc.y -= sling;
+    _S.copy(_loc); fb.localToWorld(_S);
+    _P.copy(Pl); fb.localToWorld(_P);
+    // 肱骨 + 虚拟前臂（桡骨+掌骨，腕关节按 kappa 折叠）
+    const a = deerLegs.fl.h, b = vl.len;
+    let D = legPlane(_S, F, _bodyRight);
+    const Dc = clamp(D, Math.abs(a - b) + 1e-4, a + b - 1e-4);
+    const beta = -Math.acos(clamp((a * a + Dc * Dc - b * b) / (2 * a * Dc), -1, 1));
+    const nrm = _t2.copy(_n);
+    _v3.copy(_d).multiplyScalar(Math.cos(beta)).addScaledVector(_e, Math.sin(beta));
+    _E.copy(_S).addScaledVector(_v3, a);
+    const vdir = _v1.subVectors(F, _E).normalize();
+    const rdir = rotAbout(vdir, nrm, -vl.gam, _v2);
+    _K.copy(_E).addScaledVector(rdir, deerLegs.fl.r);
+    setBone(B.scap, _P, _v3.subVectors(_S, _P), _bodyRight);
+    setBone(B.hum, _S, _v3.subVectors(_E, _S), nrm);
+    setBone(B.rad, _E, rdir, nrm);
+    setBone(B.meta, _K, _v3.subVectors(F, _K), nrm);
+    ft.nrm = nrm.clone();
+    ft.cannon = _v3.subVectors(F, _K).normalize().clone();
+    ft.reachErr = Math.max(0, D - (a + b));
+  } else {
+    const hb = deer.hindB, hl = deerLegs.hl;
+    _A.copy(L.rest.H).sub(hb.userData.rest); hb.localToWorld(_A);
+    const a = hl.va, b = hl.t;
+    let D = legPlane(_A, F, _bodyRight);
+    const Dc = clamp(D, Math.abs(a - b) + 1e-4, a + b - 1e-4);
+    const beta = Math.acos(clamp((a * a + Dc * Dc - b * b) / (2 * a * Dc), -1, 1));
+    const nrm = _t2.copy(_n);
+    const vdir = _v3.copy(_d).multiplyScalar(Math.cos(beta)).addScaledVector(_e, Math.sin(beta));
+    _M.copy(_A).addScaledVector(vdir, a);
+    const fdir = rotAbout(vdir, nrm, -hl.gam, _v1);
+    const mdir = rotAbout(fdir, nrm, hl.delta, _v2).clone();
+    _St.copy(_A).addScaledVector(fdir, hl.f);
+    _K.copy(_St).addScaledVector(_v3.subVectors(F, _M).normalize(), hl.t);
+    setBone(B.fem, _A, fdir, nrm);
+    setBone(B.tib, _St, _v3.subVectors(_K, _St), nrm);
+    setBone(B.meta, _K, _v3.subVectors(F, _K), nrm);
+    ft.nrm = nrm.clone();
+    ft.cannon = _v3.subVectors(F, _K).normalize().clone();
+    ft.reachErr = Math.max(0, D - (a + b));
+  }
+}
+const deerLegs = { hl: deer.hindL, fl: deer.foreL, virt: deer.foreL.virt };
+
+// 支撑腿可达性：给定身体前/后端高度偏移，算出最高允许值（保证着地的蹄子够得着、不被拖动）
+function rootPointWorld(L, out) {
+  if (L.fore) {
+    const fb = deer.frontB;
+    return fb.localToWorld(out.copy(L.rest.S).sub(fb.userData.rest));
+  }
+  const hb = deer.hindB;
+  return hb.localToWorld(out.copy(L.rest.H).sub(hb.userData.rest));
+}
+function legMaxReach(L) { return L.fore ? 0.975 * (deerLegs.fl.h + deerLegs.virt(0).len) : 0.965 * deerLegs.hl.max; }
+
+// ---------------------------------------------------------------------------
+//  每只脚的状态机：支撑（锁定在世界坐标，绝不滑动）↔ 摆动（按步态相位抬腿、落到预测落点）
+// ---------------------------------------------------------------------------
+function naturalGait(v, cmd) {
+  if (v < 1.55) return 'walk';
+  if (cmd === 'leap') return v > 3.0 ? 'leap' : 'trot';
+  if (cmd === 'gallop') return v > 4.6 ? 'gallop' : 'trot';
+  return v > 5.0 ? 'gallop' : 'trot';
+}
+function beginSwing(ft, d) {
+  ft.stance = false; ft.s = 0;
+  let rem = ft.cb + 1 - ft.phi;
+  const minRem = 0.55 * (1 - d);
+  if (!(rem > minRem)) rem = minRem;
+  if (rem > 1) rem = 1 - d;
+  ft.rem0 = rem;
+  toLocal(ft.F, ft.liftRel);
+  ft.liftA = ft.a; ft.liftHeel = ft.heel;
+}
+function land(ft, i) {
+  ft.stance = true; ft.s = 1;
+  planeDir(ft.L.a0, _v1);
+  ft.T.copy(ft.F).addScaledVector(_v1, ft.L.lenFT); ft.T.y = 0;
+  ft.a = ft.L.a0; ft.heel = 0;
+  planeDir(ft.a, _v1); ft.F.copy(ft.T).addScaledVector(_v1, -ft.L.lenFT);
+  ft.cb = fract(ft.phi) > 0.5 ? Math.floor(ft.phi) + 1 : Math.floor(ft.phi);
+  _v2.copy(ft.T).addScaledVector(GF.fwd, -0.028);
+  addPrint(_v2, PRINT_COL[i]);
+}
+function updateFoot(i, ft, dt) {
+  const P = loco.P, d = P.duty[i], fore = ft.L.fore, k = fore ? 0 : 1;
+  let rate = 0;
+  if (!loco.idle) {
+    const err = wrapD(loco.Phi + P.off[i] - ft.phi);
+    rate = loco.f * (1 + clamp(err * 2.4, -0.7, 1.0));
+    ft.phi += rate * dt;
+  }
+  ft.rate = rate;
+  if (ft.stance) {
+    toLocal(ft.T, _loc);
+    const rel = _loc.x - ft.nT.x;
+    const over = !loco.idle && (rel < -(fore ? 0.46 : 0.5) || rel > 0.55 || Math.abs(_loc.z - ft.nT.z) > 0.25);
+    let lift = !ft.settled && !loco.idle && ft.phi >= ft.cb + d;
+    if (over) lift = true;
+    if (lift) beginSwing(ft, d);
+    else {
+      if (loco.stopping && Math.hypot(rel, _loc.z - ft.nT.z) < 0.1) ft.settled = true;
+      const p = clamp((ft.phi - ft.cb) / Math.max(d, 0.05), 0, 1);
+      const ht = (ft.settled || loco.idle) ? 0 : P.heel * sstep(0.58, 1.0, p);
+      ft.heel = damp(ft.heel, ht, 40, dt);
+      ft.a = ft.L.a0 - ft.heel;
+      planeDir(ft.a, _v1); ft.F.copy(ft.T).addScaledVector(_v1, -ft.L.lenFT);   // 绕蹄尖转动：蹄尖不动
+    }
+  }
+  if (!ft.stance) {
+    ft.s += rate * dt / ft.rem0;
+    const s = Math.min(ft.s, 1);
+    const hs = loco.speed * d / (2 * Math.max(loco.f, 0.3));
+    const tx = ft.nF.x + hs, tz = ft.nF.z;
+    const tr = P.trail[k], ea = P.early[k];
+    const h = sm((s - tr) / Math.max(0.2, 1 - tr - ea));
+    const x = lerp(ft.liftRel.x, tx, h), z = lerp(ft.liftRel.z, tz, sm(s));
+    const bump = fore ? Math.pow(Math.sin(PI * Math.pow(s, 0.72)), 1.25) : Math.sin(PI * Math.pow(s, 0.9));
+    const y = lerp(ft.liftRel.y, ft.nF.y, sm(s)) + P.lift[i] * bump * clamp(0.35 + loco.speed / 1.2, 0, 1);
+    toWorld(_v1.set(x, y, z), ft.F);
+    if (ft.s >= 1) land(ft, i);
+  }
+}
+
+function updateLoco(dt) {
+  const st = loco;
+  const dv = st.targetV - st.speed;
+  st.speed = Math.max(0, st.speed + clamp(dv, -4.2 * dt, 3.0 * dt));
+  const ng = naturalGait(st.speed, ctrl.cmd);
+  let sw = 0;
+  for (const g of GKEYS) { st.W[g] = clamp(st.W[g] + (g === ng ? 1 : -1) * 3.0 * dt, 0, 1); sw += st.W[g]; }
+  for (const g of GKEYS) st.W[g] /= sw;
+  blendGaitParams();
+  let f = 0; for (const g of GKEYS) f += st.W[g] * gaitFreq(g, st.speed);
+  if (st.targetV === 0 || st.speed < 0.4) f = Math.max(f, 0.62);
+  st.f = f;
+  st.stopping = st.targetV === 0 && st.speed < 0.06;
+  GF.pos.addScaledVector(GF.fwd, st.speed * dt);
+  // 起步：从站立中重新排布相位，让左后腿先迈
+  if (st.idle && st.targetV > 0) {
+    st.idle = false;
+    st.Phi = Math.floor(st.Phi) + 1 + st.P.duty[2] - st.P.off[2] + 0.002;
+    st.feet.forEach((ft, i) => { ft.phi = st.Phi + st.P.off[i]; });
+  }
+  if (!st.stopping) st.feet.forEach((ft, i) => {
+    if (!ft.settled) return;
+    ft.settled = false;
+    const fr = fract(ft.phi), d = st.P.duty[i];
+    ft.cb = (fr >= d + 0.06) ? Math.floor(ft.phi) + 1 : Math.floor(ft.phi);
+  });
+  if (!st.idle) st.Phi += f * dt;
+  st.feet.forEach((ft, i) => updateFoot(i, ft, dt));
+  if (st.stopping && st.feet.every(ft => ft.settled && ft.stance)) st.idle = true;
+}
+
+// ---------------------------------------------------------------------------
+//  姿态（颈、头、耳、尾、脊柱）：各动作的姿态按权重平滑混合
+// ---------------------------------------------------------------------------
+const POSE_KEYS = ['neckP', 'neckL', 'headP', 'headY', 'headR', 'earBack', 'earSw', 'tailUp', 'tailWag', 'spineY', 'dyF', 'dyH', 'flex', 'roll'];
+const mkPose = (o = {}) => { const p = {}; for (const k of POSE_KEYS) p[k] = o[k] || 0; return p; };
+const GAIT_POSE = {
+  walk: mkPose({ neckP: -0.10, headP: 0.10, earBack: 0.12, tailUp: 0.05 }),
+  trot: mkPose({ neckP: 0.04, headP: -0.02, earBack: 0.28, tailUp: 0.55 }),
+  gallop: mkPose({ neckP: -0.30, headP: 0.30, earBack: 0.95, tailUp: 0.9 }),
+  leap: mkPose({ neckP: -0.06, headP: 0.14, earBack: 0.6, tailUp: 1.0 }),
+};
+const STAND = mkPose({ neckP: 0.05, headP: 0.0, earBack: 0.05 });
+const GRAZE = mkPose({ headP: -0.62, earBack: 0.3, earSw: 0.5, dyF: -0.05, dyH: -0.01, flex: 0.03 });
+const LOOK = mkPose({ neckP: 0.30, headP: 0.04, earBack: -0.22, earSw: -0.12, tailUp: 0.35, dyF: 0.012 });
+const lookSeq = seqCurve([
+  [0, 0, 0, 0, 0, 0], [0.7, 0, 0, 0, 0, 0], [1.9, 1.0, 0.55, -0.16, 0.12, 0.55], [3.1, 0.92, 0.36, -0.08, 0.12, 0.25], [4.3, 1.04, 0.62, -0.2, 0.13, 0.7],
+  [5.4, 0, 0, 0, 0, 0], [6.3, 0, 0, 0, 0, 0], [7.5, -1.0, -0.52, 0.15, -0.12, 0.55], [8.8, -0.9, -0.32, 0.07, -0.12, 0.25], [10.0, -1.05, -0.6, 0.19, -0.13, 0.7],
+  [11.1, 0, 0, 0, 0, 0], [11.8, 0, 0, 0, 0, 0]]);
+const grazeLiftSeq = seqCurve([[0, 0], [5.4, 0], [6.3, 0.62], [8.6, 0.62], [9.6, 0], [10.2, 0]]);
+const _seq = [0, 0, 0, 0, 0];
+
+const ctrl = {
+  cmd: 'walk', wGraze: 0, wLook: 0, tGraze: 0, tLook: 0, t: 0,
+  blinkT: 2.0, blink: 0, flick: [0, 0], flickT: 1.2, flickEar: 0, tailT: 3, tailF: 0, grazeLift: 0, tug: 0,
+};
+function updateCtrl(dt) {
+  const isLoco = !!GAITS[ctrl.cmd];
+  const statW = ctrl.wGraze + ctrl.wLook;
+  loco.targetV = (isLoco && statW < 0.3) ? GAITS[ctrl.cmd].v : 0;
+  const canStat = loco.speed < 0.25;
+  ctrl.wGraze = clamp(ctrl.wGraze + ((ctrl.cmd === 'graze' && canStat) ? 0.7 : -1.2) * dt, 0, 1);
+  ctrl.wLook = clamp(ctrl.wLook + ((ctrl.cmd === 'look' && canStat) ? 0.9 : -1.3) * dt, 0, 1);
+  ctrl.tGraze = ctrl.wGraze > 0 ? ctrl.tGraze + dt : 0;
+  ctrl.tLook = ctrl.wLook > 0 ? ctrl.tLook + dt : 0;
+  // 眨眼、耳朵抖动、尾巴甩动
+  ctrl.blinkT -= dt;
+  if (ctrl.blinkT < 0) { ctrl.blink += dt / 0.16; if (ctrl.blink >= 1) { ctrl.blink = 0; ctrl.blinkT = 1.8 + R() * 4.5; } }
+  ctrl.flickT -= dt;
+  if (ctrl.flickT < 0) { ctrl.flickEar = R() < 0.5 ? 0 : 1; ctrl.flick[ctrl.flickEar] = 1; ctrl.flickT = 1.2 + R() * 3.5; }
+  ctrl.flick[0] = Math.max(0, ctrl.flick[0] - dt * 3.2); ctrl.flick[1] = Math.max(0, ctrl.flick[1] - dt * 3.2);
+  ctrl.tailT -= dt;
+  if (ctrl.tailT < 0) { ctrl.tailF = 1; ctrl.tailT = 2.5 + R() * 5; }
+  ctrl.tailF = Math.max(0, ctrl.tailF - dt * 1.6);
+}
+function buildPose(t) {
+  const p = mkPose(), move = sstep(0.02, 0.6, loco.speed);
+  for (const k of POSE_KEYS) {
+    let g = 0; for (const gk of GKEYS) g += loco.W[gk] * GAIT_POSE[gk][k];
+    p[k] = lerp(STAND[k], g, move);
+  }
+  // 站立时的细微动作
+  const still = 1 - move;
+  p.neckP += still * 0.04 * wob(t * 0.45, 1.0);
+  p.headY += still * 0.10 * wob(t * 0.33, 2.0);
+  p.headR += still * 0.04 * wob(t * 0.4, 5.0);
+  p.headP += 0.03 * wob(t * 0.5, 3.0);
+  p.dyF += still * 0.003 * Math.sin(t * 1.9);   // 呼吸
+  p.tailWag += 0.18 * wob(t * 0.9, 4.0) * (0.4 + 0.6 * move) + Math.sin(ctrl.tailF * PI * 5) * ctrl.tailF * 0.45;
+  // 吃草
+  const wg = sm(ctrl.wGraze), wl = sm(ctrl.wLook);
+  p.baseNeckP = lerp(p.neckP, LOOK.neckP, wl);
+  if (wg > 0) {
+    grazeLiftSeq(ctrl.tGraze, _seq);
+    ctrl.grazeLift = _seq[0];
+    const ph = fract(ctrl.tGraze / 0.85);
+    const pulse = sstep(0, 0.1, ph) * (1 - sstep(0.12, 0.34, ph)) * (1 - sstep(0.0, 0.15, ctrl.grazeLift));
+    ctrl.tug = pulse;
+    for (const k of POSE_KEYS) p[k] = lerp(p[k], GRAZE[k], wg);
+    p.headR += wg * (0.12 * pulse * Math.sin(ctrl.tGraze * 2.3) + 0.05 * wob(ctrl.tGraze, 7));
+    p.headY += wg * 0.08 * wob(ctrl.tGraze * 0.6, 9);
+    p.headP += wg * ctrl.grazeLift * (0.45 + 0.05 * Math.sin(ctrl.tGraze * 13.0));
+    p.earSw += wg * 0.4 * wob(ctrl.tGraze * 0.5, 11);
+  }
+  if (wl > 0) {
+    lookSeq(ctrl.tLook, _seq);
+    for (const k of POSE_KEYS) p[k] = lerp(p[k], LOOK[k], wl);
+    const scan = 0.08 * wob(ctrl.tLook * 0.8, 13) * Math.abs(_seq[0]);
+    p.neckL += wl * _seq[0] * 1.45;
+    p.headY += wl * (_seq[1] + scan);
+    p.headR += wl * _seq[2];
+    p.spineY += wl * _seq[3];
+    p.earSw += wl * (_seq[4] * 0.6 - 0.1);
+    p.lookTurn = _seq[0] * wl;
+  } else p.lookTurn = 0;
+  p.wGraze = wg;
+  return p;
+}
+
+// 应用到骨骼
+const _qa = new QT(), _qb = new QT(), _qc = new QT(), _ZA = new V3(0, 0, 1);
+const NECK_WP = [0.34, 0.27, 0.22, 0.17], NECK_WL = [0.17, 0.26, 0.31, 0.26];
+function setNeck(neckP, neckL) {
+  deer.neck.forEach((b, i) => {
+    _qa.setFromAxisAngle(_ZA, neckP * NECK_WP[i]);
+    _qb.setFromAxisAngle(deer.neckDors[i], neckL * NECK_WL[i]);
+    b.quaternion.copy(_qa).multiply(_qb);
+  });
+}
+const MUZZLE = deer.headPivot.clone().addScaledVector(deer.headAx, 0.272).addScaledVector(deer.headUp, -0.05).sub(deer.headPivot);
+function muzzleY(np, nl) {
+  setNeck(np, nl);
+  deer.neck[0].updateMatrixWorld(true);
+  return _v3.copy(MUZZLE).applyMatrix4(deer.head.matrixWorld).y;
+}
+function applyPose(p) {
+  const D = deer;
+  // 头
+  _qa.setFromAxisAngle(_ZA, p.headP);
+  _qb.setFromAxisAngle(D.headUp, p.headY);
+  _qc.setFromAxisAngle(D.headAx, p.headR);
+  D.head.quaternion.copy(_qa).multiply(_qb).multiply(_qc);
+  // 颈：吃草时用二分法求出让嘴巴刚好碰到草的低头角度
+  let np = p.neckP;
+  if (p.wGraze > 0.001) {
+    const target = 0.045 + ctrl.tug * 0.04;
+    let lo = -2.1, hi = 0.4;
+    for (let it = 0; it < 14; it++) {
+      const mid = (lo + hi) / 2;
+      if (muzzleY(mid, p.neckL) > target) hi = mid; else lo = mid;
+    }
+    const solved = lerp((lo + hi) / 2, -0.55, ctrl.grazeLift);
+    np = lerp(p.baseNeckP, solved, p.wGraze);
+  }
+  setNeck(np, p.neckL);
+  // 尾巴
+  D.tail0.rotation.set(0, p.tailWag, -p.tailUp * 0.95);
+  D.tail1.rotation.set(0, p.tailWag * 0.7, -p.tailUp * 0.45);
+  // 耳朵
+  D.ears.forEach((e, i) => {
+    const fl = ctrl.flick[i], fs = Math.sin(fl * PI * 3) * fl;
+    const sw = p.earSw + (p.lookTurn || 0) * (i === 0 ? 0.6 : -0.6) * 0;
+    e.pivot.rotation.set(fs * 0.25, -e.s * (sw + fs * 0.35), p.earBack + fs * 0.25);
+  });
+  // 眨眼
+  const b = ctrl.blink > 0 ? Math.sin(ctrl.blink * PI) : 0;
+  D.eyes.forEach(e => { e.scale.y = 0.85 * (1 - 0.9 * b); });
+}
+
+// ---------------------------------------------------------------------------
+//  身体：步态曲线给出“期望”的前/后端高度、俯仰、脊柱屈伸；
+//  再用支撑腿的可达范围做约束（够不着就压低身体），保证蹄子始终钉在地上
+// ---------------------------------------------------------------------------
+const _acc = [0, 0, 0, 0, 0, 0], _cv = [0, 0, 0, 0, 0, 0];
+const body = { penF: 0, penH: 0, df: 0, dh: 0 };
+const XH = -0.38, XF = 0.37, LFH = XF - XH;
+function applyBody(df, dh, flex, roll, sway, spineY) {
+  const D = deer;
+  const pitch = Math.atan2(df - dh, LFH);
+  const dy = dh + (0 - XH) / LFH * (df - dh);
+  D.root.position.copy(GF.pos); D.root.rotation.set(0, GF.yaw, 0);
+  D.body.position.set(0, 0.80 + dy, sway);
+  D.body.rotation.set(roll, 0, pitch);
+  D.hindB.rotation.set(0, -spineY * 0.35, flex * 0.5);
+  D.frontB.rotation.set(0, spineY, -flex * 0.5);
+  D.root.updateMatrixWorld(true);
+}
+function reachNeed(fore) {
+  let need = 0;
+  for (const ft of loco.feet) {
+    if (!ft.stance || ft.L.fore !== fore) continue;
+    rootPointWorld(ft.L, _A);
+    const R2 = legMaxReach(ft.L);
+    const dx = Math.hypot(_A.x - ft.F.x, _A.z - ft.F.z);
+    const maxY = ft.F.y + Math.sqrt(Math.max(R2 * R2 - dx * dx, 1e-4));
+    need = Math.max(need, _A.y - maxY);
+  }
+  return need;
+}
+function updateBody(dt, pose) {
+  for (let j = 0; j < 6; j++) _acc[j] = 0;
+  const amp = sstep(0.0, 0.5, loco.speed);
+  for (const g of GKEYS) {
+    const w = loco.W[g]; if (w <= 0) continue;
+    GAITS[g].curve(loco.Phi, _cv);
+    const a = g === 'walk' ? amp : amp * clamp(loco.speed / GAITS[g].v, 0, 1);
+    for (let j = 0; j < 6; j++) _acc[j] += w * _cv[j] * a;
+  }
+  const df0 = _acc[0] + pose.dyF, dh0 = _acc[1] + pose.dyH;
+  const flex = _acc[2] + pose.flex, roll = _acc[4] + pose.roll, sway = _acc[5];
+  pose.neckP += _acc[3]; pose.baseNeckP += _acc[3];
+  let df = df0, dh = dh0;
+  for (let it = 0; it < 3; it++) {
+    applyBody(df, dh, flex, roll, sway, pose.spineY);
+    const nF = reachNeed(true), nH = reachNeed(false);
+    if (nF <= 1e-4 && nH <= 1e-4) break;
+    df -= Math.max(0, nF) + 1e-4; dh -= Math.max(0, nH) + 1e-4;
+  }
+  body.penF = Math.max(df0 - df, body.penF - 0.9 * dt);
+  body.penH = Math.max(dh0 - dh, body.penH - 0.9 * dt);
+  body.df = df0 - body.penF; body.dh = dh0 - body.penH;
+  applyBody(body.df, body.dh, flex, roll, sway, pose.spineY);
+}
+
+// 腿部求解 + 蹄子朝向
+function updateLegs() {
+  const P = loco.P;
+  loco.feet.forEach((ft, i) => {
+    const fore = ft.L.fore, k = fore ? 0 : 1;
+    const s = ft.stance ? 0 : Math.min(ft.s, 1);
+    const kappa = (!ft.stance && fore) ? P.kappa * Math.pow(Math.sin(PI * Math.pow(s, 0.75)), 1.3) : 0;
+    solveLeg(ft, kappa, P.scap);
+    if (!ft.stance) {
+      const cAng = planeAng(ft.cannon);
+      const fold = P.fold[k] * Math.pow(Math.sin(PI * Math.pow(s, 0.8)), 1.1);
+      const aC = cAng + ft.L.r0 - fold;
+      const aG = ft.L.a0 - ft.liftHeel * (1 - sm(s / 0.6)) + 0.14 * sstep(0.55, 0.85, s) * (1 - sstep(0.88, 1.0, s));
+      const wb = sstep(0.0, 0.25, s) * (1 - sstep(0.7, 0.96, s));
+      ft.a = lerp(aG, aC, wb);
+    }
+    setBone(ft.L.bones.foot, ft.F, planeDir(ft.a, _v1), ft.nrm);
+  });
+}
+
+// ---------------------------------------------------------------------------
+//  相机：鼠标/触摸拖动环绕，滚轮/双指缩放，跟随小鹿
+// ---------------------------------------------------------------------------
+const CAM0 = { az: 2.25, pol: 1.28, r: 4.4 };
+const cam = { az: CAM0.az, pol: CAM0.pol, r: CAM0.r, taz: CAM0.az, tpol: CAM0.pol, tr: CAM0.r, target: new V3(), auto: false, lastInput: 0 };
+{
+  const ptrs = new Map();
+  let pinch0 = 0, r0 = 0;
+  canvas.addEventListener('pointerdown', (e) => {
+    canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    canvas.classList.add('drag'); cam.lastInput = performance.now();
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); r0 = cam.tr; }
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    const p = ptrs.get(e.pointerId); if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    cam.lastInput = performance.now();
+    if (ptrs.size === 1) { cam.taz += dx * 0.0062; cam.tpol = clamp(cam.tpol - dy * 0.005, 0.3, 1.53); }
+    else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0 > 0) cam.tr = clamp(r0 * pinch0 / d, 1.4, 14); }
+  });
+  const up = (e) => { ptrs.delete(e.pointerId); if (!ptrs.size) canvas.classList.remove('drag'); };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); cam.tr = clamp(cam.tr * Math.exp(e.deltaY * 0.0011), 1.4, 14); cam.lastInput = performance.now(); }, { passive: false });
+  canvas.addEventListener('dblclick', () => { cam.taz = CAM0.az + Math.round((cam.taz - CAM0.az) / TAU) * TAU; cam.tpol = CAM0.pol; cam.tr = CAM0.r; });
+}
+function updateCamera(dt) {
+  if (cam.auto && performance.now() - cam.lastInput > 1500) cam.taz += dt * 0.22;
+  cam.az = damp(cam.az, cam.taz, 9, dt); cam.pol = damp(cam.pol, cam.tpol, 9, dt); cam.r = damp(cam.r, cam.tr, 7, dt);
+  const graze = sm(ctrl.wGraze);
+  cam.target.set(GF.pos.x + 0.08, lerp(0.78, 0.6, graze), GF.pos.z);
+  const sp = Math.sin(cam.pol);
+  camera.position.set(cam.target.x + cam.r * sp * Math.cos(cam.az), cam.target.y + cam.r * Math.cos(cam.pol), cam.target.z + cam.r * sp * Math.sin(cam.az));
+  if (camera.position.y < 0.12) camera.position.y = 0.12;
+  camera.lookAt(cam.target);
+}
+
+// ---------------------------------------------------------------------------
+//  界面
+// ---------------------------------------------------------------------------
+const ui = {
+  btns: [...document.querySelectorAll('.btn')], gait: document.getElementById('gaitName'), sub: document.getElementById('gaitSub'),
+  speed: document.getElementById('speed'), diag: document.getElementById('diag'),
+  slow: document.getElementById('tgSlow'), print: document.getElementById('tgPrint'), orbit: document.getElementById('tgOrbit'),
+};
+let timeScale = 1;
+function setCmd(c) {
+  ctrl.cmd = c;
+  ui.btns.forEach(b => b.classList.toggle('on', b.dataset.act === c));
+}
+ui.btns.forEach(b => b.addEventListener('click', () => setCmd(b.dataset.act)));
+const toggleSlow = () => { timeScale = timeScale === 1 ? 0.3 : 1; ui.slow.classList.toggle('on', timeScale !== 1); };
+ui.slow.addEventListener('click', toggleSlow);
+ui.print.addEventListener('click', () => { printMesh.visible = !printMesh.visible; ui.print.classList.toggle('on', printMesh.visible); });
+ui.orbit.addEventListener('click', () => { cam.auto = !cam.auto; ui.orbit.classList.toggle('on', cam.auto); });
+const KEYMAP = { '1': 'walk', '2': 'trot', '3': 'gallop', '4': 'leap', '5': 'graze', '6': 'look' };
+addEventListener('keydown', (e) => {
+  if (KEYMAP[e.key]) setCmd(KEYMAP[e.key]);
+  else if (e.code === 'Space') { e.preventDefault(); toggleSlow(); }
+});
+setCmd('walk');
+
+// 足部着地图
+const dctx = ui.diag.getContext('2d');
+const HIST_T = 3.0;
+const hist = [];   // {t, s:[4]}
+let simT = 0;
+function drawDiag() {
+  const W = ui.diag.width, H = ui.diag.height, c = dctx;
+  c.clearRect(0, 0, W, H);
+  const names = ['左前', '右前', '左后', '右后'];
+  const rowH = 36, top = 18, left = 62, right = W - 12;
+  c.font = '22px "PingFang SC","Microsoft YaHei",sans-serif'; c.textBaseline = 'middle';
+  for (let r = 0; r < 4; r++) {
+    const y = top + r * (rowH + 4);
+    c.fillStyle = 'rgba(255,255,255,0.07)'; c.fillRect(left, y, right - left, rowH);
+    c.fillStyle = 'rgba(255,250,240,0.8)'; c.fillText(names[r], 8, y + rowH / 2 + 1);
+  }
+  const t1 = simT, t0 = t1 - HIST_T;
+  const xOf = t => left + (t - t0) / HIST_T * (right - left);
+  for (let r = 0; r < 4; r++) {
+    const y = top + r * (rowH + 4);
+    c.fillStyle = '#' + PRINT_COL[r].clone().convertLinearToSRGB().getHexString();
+    let start = null;
+    for (let k = 0; k < hist.length; k++) {
+      const h = hist[k], on = h.s[r];
+      if (on && start === null) start = h.t;
+      if ((!on || k === hist.length - 1) && start !== null) {
+        const x0 = Math.max(left, xOf(start)), x1 = xOf(h.t);
+        if (x1 > x0) c.fillRect(x0, y + 5, x1 - x0, rowH - 10);
+        start = null;
+      }
+    }
+  }
+  c.fillStyle = 'rgba(255,255,255,0.55)'; c.fillRect(right - 2, top - 6, 2, 4 * (rowH + 4) + 4);
+}
+
+// ---------------------------------------------------------------------------
+//  主循环
+// ---------------------------------------------------------------------------
+let last = performance.now(), fpsAcc = 0, fpsN = 0, qualityChecked = false, uiT = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  let rdt = Math.min(0.05, (now - last) / 1000); last = now;
+  const dt = rdt * timeScale;
+  simT += dt;
+  ctrl.t += dt;
+  updateCtrl(dt);
+  // 物理子步：保证高速时落脚点精确
+  const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
+  const h = dt / steps;
+  for (let i = 0; i < steps; i++) updateLoco(h);
+  const pose = buildPose(ctrl.t);
+  updateBody(dt, pose);
+  applyPose(pose);
+  deer.root.updateMatrixWorld(true);
+  updateLegs();
+  // 世界
+  worldU.uTime.value += dt; worldU.uC.value.set(GF.pos.x, 0, GF.pos.z);
+  skyMat.uniforms.uTime.value = worldU.uTime.value;
+  ground.position.set(Math.round(GF.pos.x / 50) * 50, 0, 0);
+  updateProps(GF.pos.x);
+  updatePrints(dt);
+  updateCamera(rdt);
+  sky.position.copy(camera.position);
+  sun.position.copy(cam.target).addScaledVector(SUN_DIR, 18); sun.target.position.copy(cam.target);
+  fill.position.copy(cam.target).add(new V3(4, 3, -6)); fill.target.position.copy(cam.target);
+  // 记录着地图
+  hist.push({ t: simT, s: loco.feet.map(f => f.stance) });
+  while (hist.length && hist[0].t < simT - HIST_T - 0.2) hist.shift();
+  uiT += rdt;
+  if (uiT > 1 / 30) {
+    uiT = 0; drawDiag();
+    let g = 'walk', bw = 0; for (const k of GKEYS) if (loco.W[k] > bw) { bw = loco.W[k]; g = k; }
+    let name = GAITS[g].name, sub = GAITS[g].sub;
+    if (loco.speed < 0.05 && loco.idle) {
+      if (ctrl.wGraze > 0.5) { name = '低头吃草'; sub = '颈部逐节弯曲，嘴巴贴着草尖啃食、咀嚼'; }
+      else if (ctrl.wLook > 0.5) { name = '回头张望'; sub = '颈椎侧弯 + 头部扭转，双耳转向声源'; }
+      else { name = '站立'; sub = '四蹄锁定在地面'; }
+    } else if (loco.targetV === 0) { name = '减速停下'; sub = '逐步把四蹄收回到身体下方'; }
+    ui.gait.textContent = name; ui.sub.textContent = sub;
+    ui.speed.textContent = (loco.speed * 3.6).toFixed(1) + ' km/h';
+  }
+  renderer.render(scene, camera);
+  // 帧率自适应：前几秒过慢时减少草叶数量
+  if (!qualityChecked && now > 2500) {
+    fpsAcc += rdt; fpsN++;
+    if (fpsN >= 90) {
+      qualityChecked = true;
+      const fps = fpsN / fpsAcc;
+      if (fps < 40) { grassNear.geometry.instanceCount = 38000; grassFar.geometry.instanceCount = 20000; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25)); renderer.setSize(innerWidth, innerHeight, false); }
+    }
+  }
+}
+function onResize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', onResize);
+// 预先走一小段，让开场就是自然的步态
+for (let i = 0; i < 240; i++) { updateCtrl(1 / 60); updateLoco(1 / 60); }
+ctrl.t = 4;
+updateCamera(1);
+requestAnimationFrame((t) => { last = t; frame(t); });
+const loader = document.getElementById('loader');
+setTimeout(() => { loader.style.opacity = 0; setTimeout(() => loader.remove(), 1100); }, 250);
+window.__deer = { deer, loco, ctrl, cam, setCmd, GF };
+</script>
+</body>
+</html>

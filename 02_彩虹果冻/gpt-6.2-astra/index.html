@@ -1,0 +1,2764 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#141618">
+    <title>软物实验室 · 彩虹果冻</title>
+    <style>
+      * {
+        box-sizing: border-box
+      }
+
+      :root {
+        color-scheme: dark;
+        --bg: #121416;
+        --line: #35383b;
+        --muted: #a1a5a7;
+        --ink: #f3f1eb;
+        --amber: #ffc066;
+        --mono: "IBM Plex Mono",Consolas,"Courier New",monospace;
+        --sans: "DM Sans","Microsoft YaHei UI","Microsoft YaHei",sans-serif
+      }
+
+      html,body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
+        font-family: var(--sans);
+        color: var(--ink);
+        overflow: hidden
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        padding: 0 clamp(14px,2.15vw,36px)
+      }
+
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent
+      }
+
+      button:focus-visible {
+        outline: 2px solid var(--amber);
+        outline-offset: 4px
+      }
+
+      button svg,.icon {
+        width: 18px;
+        height: 18px;
+        display: block;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.65;
+        stroke-linecap: round;
+        stroke-linejoin: round
+      }
+
+      .header {
+        height: 78px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px
+      }
+
+      .brand,.header-actions,.live,.reset,.foot,.footgroup,.hint,.tool,.toolrack,.view-controls,.sample-readout,.keyhelp {
+        display: flex;
+        align-items: center
+      }
+
+      .brand {
+        gap: 13px
+      }
+
+      .lab-mark {
+        width: 39px;
+        height: 39px;
+        color: var(--amber);
+        flex: none
+      }
+
+      .brand-title {
+        font-size: 20px;
+        font-weight: 750;
+        letter-spacing: .055em;
+        line-height: 1.2
+      }
+
+      .brand-en {
+        font: 9px var(--mono);
+        color: #a9aaab;
+        letter-spacing: .19em;
+        margin-top: 5px
+      }
+
+      .header-actions {
+        gap: 13px
+      }
+
+      .live {
+        font-size: 11px;
+        color: #b6babb;
+        gap: 8px;
+        letter-spacing: .06em
+      }
+
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #98d6ad;
+        box-shadow: 0 0 8px #83cb9b40
+      }
+
+      .vr {
+        height: 18px;
+        width: 1px;
+        background: var(--line);
+        margin: 0 3px
+      }
+
+      .smallbtn,.reset,.view-controls button {
+        background: #1c1e20;
+        border: 1px solid #393b3d;
+        border-radius: 8px;
+        transition: background .15s,border-color .15s
+      }
+
+      .smallbtn:hover,.reset:hover,.view-controls button:hover {
+        background: #2d2f30;
+        border-color: #666
+      }
+
+      .smallbtn {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px
+      }
+
+      .reset {
+        height: 36px;
+        gap: 8px;
+        padding: 0 13px;
+        font-size: 12px;
+        font-weight: 600
+      }
+
+      .reset svg {
+        width: 15px;
+        height: 15px
+      }
+
+      .stage {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        border: 1px solid #3b3d40;
+        border-radius: 13px;
+        overflow: hidden;
+        isolation: isolate;
+        background: #1b1e21;
+        box-shadow: 0 10px 50px #0002
+      }
+
+      #scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+        cursor: grab
+      }
+
+      #scene:active {
+        cursor: grabbing
+      }
+
+      .titleblock {
+        position: absolute;
+        left: clamp(20px,2.7vw,46px);
+        top: clamp(20px,3.5vh,43px);
+        pointer-events: none
+      }
+
+      .sample-readout {
+        gap: 8px;
+        color: var(--amber);
+        font: 10px var(--mono);
+        letter-spacing: .14em
+      }
+
+      .sample-readout:before {
+        content: "";
+        width: 17px;
+        height: 2px;
+        background: var(--amber)
+      }
+
+      h1 {
+        font-size: clamp(30px,3.05vw,51px);
+        letter-spacing: .04em;
+        font-weight: 720;
+        margin: 10px 0 6px;
+        line-height: 1.22
+      }
+
+      .subtitle {
+        font: 10px var(--mono);
+        letter-spacing: .19em;
+        color: #a6a8aa
+      }
+
+      .telemetry {
+        position: absolute;
+        right: clamp(18px,2.6vw,42px);
+        top: clamp(22px,3.8vh,46px);
+        width: 124px;
+        pointer-events: none;
+        color: #b4b6b7
+      }
+
+      .telehead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 10px;
+        color: #c2c4c5;
+        letter-spacing: .08em;
+        margin-bottom: 9px
+      }
+
+      .telehead svg {
+        width: 34px;
+        height: 12px;
+        stroke: var(--amber);
+        fill: none;
+        stroke-width: 1.2
+      }
+
+      .readrow {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #ffffff15;
+        padding: 7px 0 5px;
+        font-size: 11px
+      }
+
+      .value {
+        font: 12px var(--mono);
+        color: #e8e9e7;
+        font-variant-numeric: tabular-nums
+      }
+
+      .dockarea {
+        position: absolute;
+        bottom: clamp(18px,3.2vh,38px);
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 99%;
+        pointer-events: none
+      }
+
+      .hint {
+        gap: 8px;
+        font-size: 12px;
+        letter-spacing: .035em;
+        color: #d7d7d4;
+        white-space: nowrap;
+        text-shadow: 0 1px 5px #000
+      }
+
+      .hint svg {
+        width: 13px;
+        height: 13px;
+        color: var(--amber)
+      }
+
+      .toolrack {
+        padding: 6px;
+        gap: 4px;
+        background: linear-gradient(#292b2d,#202224);
+        border: 1px solid #484a4a;
+        border-radius: 15px;
+        box-shadow: 0 10px 26px #0005,inset 0 1px #ffffff0b;
+        pointer-events: auto
+      }
+
+      .tool {
+        border: 1px solid transparent;
+        border-radius: 9px;
+        background: transparent;
+        padding: 0 13px;
+        min-width: 107px;
+        height: 46px;
+        gap: 9px;
+        justify-content: center;
+        color: #d2d3d3;
+        font-size: 13px;
+        font-weight: 600;
+        transition: background .14s,color .14s
+      }
+
+      .tool svg {
+        width: 22px;
+        height: 22px;
+        stroke-width: 1.6
+      }
+
+      .tool:hover {
+        background: #36383a
+      }
+
+      .tool[aria-pressed=true] {
+        background: var(--amber);
+        border-color: #ffd396;
+        box-shadow: inset 0 1px #ffe4ba;
+        color: #30251a
+      }
+
+      .key {
+        font: 10px var(--mono);
+        border: 1px solid #ffffff27;
+        padding: 1px 4px;
+        line-height: 13px;
+        border-radius: 4px;
+        color: #a8abac
+      }
+
+      .tool[aria-pressed=true] .key {
+        color: #735328;
+        border-color: #97703f66
+      }
+
+      .view-controls {
+        position: absolute;
+        right: 22px;
+        bottom: 24px;
+        gap: 0;
+        border: 1px solid #424548;
+        border-radius: 7px;
+        overflow: hidden;
+        background: #202225
+      }
+
+      .view-controls button {
+        width: 31px;
+        height: 30px;
+        border: 0;
+        background: transparent;
+        border-radius: 0;
+        display: grid;
+        place-items: center;
+        color: #c0c2c3
+      }
+
+      .view-controls svg {
+        width: 14px;
+        height: 14px
+      }
+
+      .view-controls button+button {
+        border-left: 1px solid #393b3e
+      }
+
+      .axis {
+        position: absolute;
+        left: 26px;
+        bottom: 23px;
+        color: #999fa2;
+        pointer-events: none
+      }
+
+      .axis svg {
+        width: 54px;
+        height: 48px;
+        overflow: visible
+      }
+
+      .axis text {
+        font: 8px var(--mono)
+      }
+
+      .foot {
+        height: 40px;
+        flex: none;
+        justify-content: space-between;
+        color: #94999c;
+        font-size: 10px;
+        letter-spacing: .045em
+      }
+
+      .footgroup {
+        gap: 21px
+      }
+
+      .foot span,.keyhelp {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px
+      }
+
+      .foot svg {
+        width: 13px;
+        height: 13px;
+        stroke-width: 1.5
+      }
+
+      .keyhelp kbd {
+        font: 9px var(--mono);
+        border: 1px solid #424447;
+        border-radius: 4px;
+        padding: 2px 5px;
+        color: #b9bbbc
+      }
+
+      #overlay {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: visible
+      }
+
+      #cursor {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: none;
+        pointer-events: none;
+        color: #fff4d8;
+        filter: drop-shadow(0 2px 4px #000a)
+      }
+
+      #cursor svg {
+        width: 32px;
+        height: 32px;
+        stroke-width: 1.5
+      }
+
+      .toast {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translate(-50%,-5px);
+        background: #27292bea;
+        border: 1px solid #44484a;
+        border-radius: 7px;
+        padding: 8px 15px;
+        font-size: 12px;
+        opacity: 0;
+        transition: .18s;
+        pointer-events: none
+      }
+
+      .toast.show {
+        transform: translate(-50%,0);
+        opacity: 1
+      }
+
+      @media(min-width: 1650px) {
+        .header {
+          height:90px
+        }
+
+        .foot {
+          height: 48px
+        }
+
+        .tool {
+          min-width: 124px;
+          height: 51px
+        }
+      }
+
+      @media(max-width: 760px) {
+        body {
+          padding:0 12px
+        }
+
+        .header {
+          height: 63px
+        }
+
+        .lab-mark {
+          width: 31px;
+          height: 31px
+        }
+
+        .brand {
+          gap: 8px
+        }
+
+        .brand-title {
+          font-size: 16px
+        }
+
+        .brand-en {
+          font-size: 7px
+        }
+
+        .header-actions {
+          gap: 7px
+        }
+
+        .vr {
+          display: none
+        }
+
+        .live {
+          font-size: 0;
+          gap: 0;
+          margin: 0 4px
+        }
+
+        .reset {
+          padding: 0 9px
+        }
+
+        .smallbtn,.reset {
+          height: 32px
+        }
+
+        .smallbtn {
+          width: 32px
+        }
+
+        .telemetry {
+          width: 89px
+        }
+
+        .tool {
+          min-width: 74px;
+          padding: 0 9px;
+          gap: 5px
+        }
+
+        .tool .key {
+          display: none
+        }
+
+        .view-controls {
+          right: 12px;
+          bottom: 118px
+        }
+
+        .axis {
+          left: 15px;
+          bottom: 116px
+        }
+
+        .axis svg {
+          width: 41px;
+          height: 36px
+        }
+
+        .footgroup {
+          gap: 12px
+        }
+
+        .foot {
+          height: 31px
+        }
+
+        .keyhelp {
+          display: none!important
+        }
+
+        .toolrack {
+          gap: 1px
+        }
+
+        .dockarea {
+          gap: 10px
+        }
+
+        .titleblock {
+          left: 18px
+        }
+
+        .telehead {
+          margin-bottom: 6px
+        }
+      }
+
+      @media(max-width: 440px) {
+        .tool {
+          flex-direction:column;
+          height: 55px;
+          min-width: 66px;
+          font-size: 11px;
+          gap: 2px
+        }
+
+        .tool svg {
+          width: 21px;
+          height: 21px
+        }
+
+        .toolrack {
+          padding: 4px;
+          border-radius: 12px
+        }
+
+        .hint {
+          font-size: 11px
+        }
+
+        .reset {
+          font-size: 11px
+        }
+
+        .telemetry {
+          width: 73px
+        }
+
+        .titleblock h1 {
+          font-size: 29px
+        }
+
+        .subtitle {
+          font-size: 8px
+        }
+
+        .foot .wheelhelp {
+          display: none
+        }
+      }
+
+      @media(max-height: 560px) and (min-width:600px) {
+        .header {
+          height:48px
+        }
+
+        .foot {
+          height: 24px
+        }
+
+        .titleblock,.telemetry {
+          top: 14px
+        }
+
+        .titleblock h1 {
+          font-size: 25px;
+          margin: 5px 0
+        }
+
+        .dockarea {
+          bottom: 7px;
+          gap: 3px
+        }
+
+        .tool {
+          height: 33px
+        }
+
+        .toolrack {
+          padding: 3px
+        }
+
+        .tool svg {
+          width: 17px;
+          height: 17px
+        }
+
+        .hint {
+          font-size: 10px
+        }
+
+        .view-controls,.axis {
+          bottom: 12px
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <symbol id="hand" viewBox="0 0 24 24">
+          <path d="M7.5 12.6 5.7 9.3c-.9-1.6-3-.5-2.4 1l3.5 8a5.4 5.4 0 0 0 5 3.2h1.7a6.5 6.5 0 0 0 6.4-5.9l.5-5.1c.2-1.9-2.1-2.1-2.5-.5l-.6 2.2.1-7c0-1.8-2.5-1.8-2.5 0l-.1 5.6-.5-7.1c-.1-1.8-2.7-1.7-2.6.2l.4 7-1.4-5.4c-.5-1.8-2.8-1.2-2.4.5l.8 4.6"/>
+        </symbol>
+        <symbol id="knife" viewBox="0 0 24 24">
+          <path d="m14.3 10 5-6.5c1.2-1.5 3.4.1 2.1 1.7l-5.2 6.3zM14.3 10l1.9 1.5-5.3 6.6c-1.8 2.2-5 3.4-8.2 3.3z"/>
+          <path d="m6.2 19.3 6.6-7.7"/>
+        </symbol>
+        <symbol id="nail" viewBox="0 0 24 24">
+          <path d="m9.8 5.5 8.7 8.7M11 4.3l1.6-1.7 8.8 8.8-1.7 1.6zM12.2 8l3.8 3.8-9 8.1-4 1.1 1.2-4z"/>
+        </symbol>
+        <symbol id="fire" viewBox="0 0 24 24">
+          <path d="M6.2 12.8h10v7.9c0 .8-.6 1.4-1.4 1.4H7.6c-.8 0-1.4-.6-1.4-1.4zM7.5 12.6V9.8h4.7v2.8m1.8-.1V9.2h2.3v3.3"/>
+          <path d="M9.6 8.2C6.3 6.1 10.9 4 10.3 1c3.1 2.9 4 5.3.9 7.2"/>
+        </symbol>
+        <symbol id="reset" viewBox="0 0 24 24">
+          <path d="M4 9a8 8 0 1 1-.1 6M4 3.8v5.4h5.4"/>
+        </symbol>
+        <symbol id="sound" viewBox="0 0 24 24">
+          <path d="M3.5 9H7l5-4v14l-5-4H3.5zM15.6 8a5.8 5.8 0 0 1 0 8m2.9-10.5a9.5 9.5 0 0 1 0 13"/>
+        </symbol>
+        <symbol id="mute" viewBox="0 0 24 24">
+          <path d="M3.5 9H7l5-4v14l-5-4H3.5zM16 9l5 6m0-6-5 6"/>
+        </symbol>
+        <symbol id="mouse" viewBox="0 0 24 24">
+          <rect x="5.5" y="2.5" width="13" height="19" rx="6.5"/>
+          <path d="M12 6v4"/>
+        </symbol>
+        <symbol id="orbit" viewBox="0 0 24 24">
+          <ellipse cx="12" cy="13" rx="10" ry="5" transform="rotate(-23 12 13)"/>
+          <circle cx="12" cy="12" r="2"/>
+        </symbol>
+        <symbol id="cube" viewBox="0 0 24 24">
+          <path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5m-9 5v10"/>
+        </symbol>
+        <symbol id="minus" viewBox="0 0 24 24">
+          <path d="M5 12h14"/>
+        </symbol>
+        <symbol id="plus" viewBox="0 0 24 24">
+          <path d="M5 12h14m-7-7v14"/>
+        </symbol>
+      </defs>
+    </svg>
+    <header class="header">
+      <div class="brand">
+        <svg class="lab-mark" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 17.4c0-1.9 1-3.1 2.8-4.1l11.5-6.4a5.6 5.6 0 0 1 5.4 0l11.5 6.4c1.8 1 2.8 2.2 2.8 4.1v9.9c0 1.9-1.1 3.3-2.8 4.2l-11.5 6.4a5.5 5.5 0 0 1-5.4 0L7.8 31.5A4.6 4.6 0 0 1 5 27.3z"/>
+          <path d="m5.6 15.7 13.7 7.6a5.5 5.5 0 0 0 5.4 0l13.7-7.6M5.3 21l14 7.9a5.6 5.6 0 0 0 5.4 0l14-7.9M5.3 26.5l14 7.9a5.6 5.6 0 0 0 5.4 0l14-7.9"/>
+        </svg>
+        <div>
+          <div class="brand-title">软物实验室</div>
+          <div class="brand-en">SOFT MATTER LAB</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="live">
+          <i class="dot"></i>引擎在线
+        </div>
+        <i class="vr"></i>
+        <button id="audio" class="smallbtn" aria-label="开启音效" title="开启音效" aria-pressed="false">
+          <svg>
+            <use href="#mute"/>
+          </svg>
+        </button>
+        <button id="resetBtn" class="reset" title="重置场景 (R)">
+          <svg>
+            <use href="#reset"/>
+          </svg>
+          重置场景
+        </button>
+      </div>
+    </header>
+    <main class="stage" aria-label="三维果冻实验台">
+      <canvas id="scene" aria-label="彩虹果冻。选择工具后在果冻上拖动，拖动空白处旋转视角。"></canvas>
+      <div class="titleblock">
+        <div class="sample-readout">SOFT BODY</div>
+        <h1>彩虹果冻</h1>
+        <div class="subtitle">RAINBOW GELATIN</div>
+      </div>
+      <aside class="telemetry">
+        <div class="telehead">
+          <span>实时状态</span>
+          <svg viewBox="0 0 34 12">
+            <path id="wave" d="M0 7h34"/>
+          </svg>
+        </div>
+        <div class="readrow">
+          <span>果冻块数</span>
+          <span class="value" id="pieceCount">01</span>
+        </div>
+        <div class="readrow">
+          <span>植入钉子</span>
+          <span class="value" id="pinCount">00</span>
+        </div>
+      </aside>
+      <svg id="overlay" aria-hidden="true">
+        <path id="sliceLine" fill="none" stroke="#ffce88" stroke-width="2" stroke-dasharray="6 5" stroke-linecap="round"/>
+      </svg>
+      <div id="cursor" aria-hidden="true">
+        <svg class="icon">
+          <use href="#knife"/>
+        </svg>
+      </div>
+      <div class="axis" aria-hidden="true">
+        <svg id="axes" viewBox="0 0 54 48"></svg>
+      </div>
+      <div class="dockarea">
+        <div class="hint" aria-live="polite">
+          <svg class="icon">
+            <use href="#mouse"/>
+          </svg>
+          <span id="hint"></span>
+        </div>
+        <div class="toolrack" role="toolbar" aria-label="实验工具"></div>
+      </div>
+      <div class="view-controls">
+        <button id="zoomOut" aria-label="缩小" title="缩小">
+          <svg>
+            <use href="#minus"/>
+          </svg>
+        </button>
+        <button id="cameraHome" aria-label="还原视角" title="还原视角">
+          <svg>
+            <use href="#cube"/>
+          </svg>
+        </button>
+        <button id="zoomIn" aria-label="放大" title="放大">
+          <svg>
+            <use href="#plus"/>
+          </svg>
+        </button>
+      </div>
+      <div class="toast" role="status" id="toast"></div>
+    </main>
+    <footer class="foot">
+      <div class="footgroup">
+        <span>
+          <svg class="icon">
+            <use href="#orbit"/>
+          </svg>
+          <span id="orbitHint">拖动空白处旋转视角</span>
+        </span>
+        <span class="wheelhelp">
+          <svg class="icon">
+            <use href="#mouse"/>
+          </svg>
+          滚轮缩放
+        </span>
+      </div>
+      <span class="keyhelp">
+        <kbd>1 – 4</kbd> 切换工具
+      </span>
+    </footer>
+    <script>
+      'use strict';
+      const $ = id => document.getElementById(id)
+        , canvas = $('scene')
+        , TAU = Math.PI * 2;
+      const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+        , sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+        , mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+      const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+        , cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+        , length = a => Math.hypot(...a)
+        , norm = a => mul(a, 1 / (length(a) || 1))
+        , mix = (a, b, t) => add(mul(a, 1 - t), mul(b, t))
+        , clamp = (x, l, h) => Math.max(l, Math.min(h, x))
+        , zero = () => [0, 0, 0];
+      const toolspec = [['hand', '揉捏', '轻点戳一下，拖动揉捏，松手甩出'], ['knife', '切刀', '按住并划过果冻，沿划线切开'], ['nail', '钉子', '点击果冻表面，把钉子扎进去'], ['fire', '打火机', '按住局部加热，拖动烘烤不同位置']];
+      let mode = 0, muted = true, audioCtx, noticeTimer;
+      function sound(freq=190, dur=.15, end=.45, type='sine', strength=.075) {
+        if (muted)
+          return;
+        try {
+          audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === 'suspended')
+            audioCtx.resume();
+          const o = audioCtx.createOscillator()
+            , g = audioCtx.createGain()
+            , t = audioCtx.currentTime;
+          o.type = type;
+          o.frequency.setValueAtTime(freq, t);
+          o.frequency.exponentialRampToValueAtTime(freq * end, t + dur);
+          g.gain.setValueAtTime(.001, t);
+          g.gain.exponentialRampToValueAtTime(strength, t + .009);
+          g.gain.exponentialRampToValueAtTime(.001, t + dur);
+          o.connect(g).connect(audioCtx.destination);
+          o.start(t);
+          o.stop(t + dur + .02)
+        } catch {}
+      }
+      function notice(s) {
+        $('toast').textContent = s;
+        $('toast').classList.add('show');
+        clearTimeout(noticeTimer);
+        noticeTimer = setTimeout( () => $('toast').classList.remove('show'), 1300)
+      }
+      // Physical surface, material coordinates and triangle topology stay independent after a cut.
+      let pieces = []
+        , pins = []
+        , flows = []
+        , drops = []
+        , pools = []
+        , active = null
+        , lastMouse = null
+        , heatSpot = null
+        , time = 0
+        , nextId = 1;
+      function makeBody(vertices, indices, velocity=zero()) {
+        const lo = [Infinity, Infinity, Infinity]
+          , hi = mul(lo, -1);
+        for (const v of vertices)
+          for (let k = 0; k < 3; k++) {
+            lo[k] = Math.min(lo[k], v.p[k]);
+            hi[k] = Math.max(hi[k], v.p[k])
+          }
+        const pos = mix(lo, hi, .5)
+          , n = vertices.length
+          , rest = new Float32Array(n * 3)
+          , mat = new Float32Array(n * 3)
+          , melt = new Float32Array(n)
+          , skin = new Float32Array(n)
+          , world = new Float32Array(n * 3)
+          , normal = new Float32Array(n * 3);
+        vertices.forEach( (v, i) => {
+          rest.set(sub(v.p, pos), 3 * i);
+          mat.set(v.m, 3 * i);
+          skin[i] = v.cap || 0;
+          melt[i] = v.heat || 0
+        }
+        );
+        const com = zero();
+        let volume = 0;
+        for (let i = 0; i < indices.length; i += 3) {
+          const a = point(rest, indices[i])
+            , b = point(rest, indices[i + 1])
+            , c = point(rest, indices[i + 2])
+            , v = dot(a, cross(b, c));
+          volume += v;
+          for (let k = 0; k < 3; k++)
+            com[k] += (a[k] + b[k] + c[k]) * v * .25
+        }
+        return {
+          id: nextId++,
+          pos,
+          com: Math.abs(volume) > .0001 ? mul(com, 1 / volume) : zero(),
+          vel: velocity,
+          rest,
+          mat,
+          melt,
+          skin,
+          world,
+          normal,
+          indices: new Uint16Array(indices),
+          n,
+          size: sub(hi, lo),
+          angle: zero(),
+          spin: zero(),
+          wob: zero(),
+          speed: zero(),
+          modes: [],
+          floor: -lo[1] + pos[1],
+          dirty: true,
+          lastFloor: 0,
+          support: 0,
+          settled: false,
+          gpu: null
+        };
+      }
+      function initialBody() {
+        const vertices = []
+          , tri = []
+          , rings = []
+          , N = gl ? 144 : 64
+          , H = 2.143;
+        function ring(y, r, amp) {
+          const ids = [];
+          for (let i = 0; i < N; i++) {
+            const t = TAU * i / N
+              , lobe = (Math.cos(12 * t) * .84 + Math.cos(24 * t) * .16)
+              , rad = r * (1 + amp * lobe)
+              , p = [rad * Math.cos(t), y, rad * Math.sin(t)];
+            ids.push(vertices.length);
+            vertices.push({
+              p,
+              m: p.slice()
+            })
+          }
+          rings.push(ids)
+        }
+        for (const r of [.08, .38, .75, 1.10, 1.38, 1.49])
+          ring(.014, r, .068);
+        for (let j = 1; j <= 7; j++) {
+          const a = j / 7 * Math.PI / 2;
+          ring(.014 + .16 * (1 - Math.cos(a)), 1.49 + .16 * Math.sin(a), .07)
+        }
+        for (let j = 1; j <= 28; j++) {
+          const u = j / 28;
+          ring(.174 + 1.61 * u, 1.65 - .32 * u + .016 * Math.sin(Math.PI * u), .071 + .006 * Math.sin(u * Math.PI))
+        }
+        for (let j = 1; j <= 10; j++) {
+          const a = j / 10 * Math.PI / 2;
+          ring(1.784 + .248 * Math.sin(a), 1.33 - .20 * (1 - Math.cos(a)), .071)
+        }
+        for (let j = 1; j <= 22; j++) {
+          const u = j / 23
+            , rho = 1 - u;
+          ring(2.032 + .111 * (1 - rho * rho) - .037 * Math.exp(-Math.pow((rho - .68) * 6.8, 2)), 1.13 * rho, .071 * rho)
+        }
+        for (let j = 0; j < rings.length - 1; j++)
+          for (let i = 0; i < N; i++) {
+            const a = rings[j][i]
+              , b = rings[j][(i + 1) % N]
+              , c = rings[j + 1][i]
+              , d = rings[j + 1][(i + 1) % N];
+            tri.push(a, c, b, b, c, d)
+          }
+        for (const [r,y,up] of [[rings[0], .014, false], [rings.at(-1), H, true]]) {
+          const k = vertices.length;
+          vertices.push({
+            p: [0, y, 0],
+            m: [0, y, 0]
+          });
+          for (let i = 0; i < N; i++)
+            tri.push(k, r[up ? (i + 1) % N : i], r[up ? i : (i + 1) % N])
+        }
+        return makeBody(vertices, tri);
+      }
+      const point = (arr, i) => [arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]];
+      function updateSurface(b) {
+        const r = b.rest
+          , w = b.world
+          , n = b.normal;
+        let low = Infinity;
+        const ax = b.angle[0]
+          , ay = b.angle[1]
+          , az = b.angle[2]
+          , cx = Math.cos(ax)
+          , sx = Math.sin(ax)
+          , cy = Math.cos(ay)
+          , sy = Math.sin(ay)
+          , cz = Math.cos(az)
+          , sz = Math.sin(az);
+        for (let i = 0, j = 0; i < b.n; i++,
+        j += 3) {
+          let x = r[j]
+            , y = r[j + 1]
+            , z = r[j + 2]
+            , h = clamp(y / b.size[1] + .48, 0, 1)
+            , heat = b.melt[i];
+          const spread = 1 - b.wob[1] * .45;
+          x = x * spread + b.wob[0] * (h - .23);
+          z = z * spread + b.wob[2] * (h - .23);
+          y += b.wob[1] * (h - .14);
+          if (heat) {
+            let base = b.mat[j + 1]
+              , ripple = .77 + .23 * Math.cos(b.mat[j] * 12 + b.mat[j + 2] * 6);
+            y -= heat * (.23 + .64 * base) * ripple;
+            x += heat * b.mat[j] * .18;
+            z += heat * b.mat[j + 2] * .18
+          }
+          for (const m of b.modes) {
+            const f = m.weights[i];
+            x += m.d[0] * f;
+            y += m.d[1] * f;
+            z += m.d[2] * f
+          }
+          const xa = cy * x + sy * z
+            , za = -sy * x + cy * z
+            , ya = cx * y - sx * za
+            , zb = sx * y + cx * za;
+          w[j] = b.pos[0] + cz * xa - sz * ya;
+          w[j + 1] = b.pos[1] + sz * xa + cz * ya;
+          w[j + 2] = b.pos[2] + zb;
+          low = Math.min(low, w[j + 1]);
+        }
+        const floor = b.support + .012;
+        for (let i = 1; i < w.length; i += 3)
+          w[i] = Math.max(floor, w[i]);
+        b.lastFloor = low;
+        b.floor = b.pos[1] - low;
+        n.fill(0);
+        const ids = b.indices;
+        for (let j = 0; j < ids.length; j += 3) {
+          const a = ids[j] * 3
+            , c = ids[j + 1] * 3
+            , d = ids[j + 2] * 3
+            , dx = w[c] - w[a]
+            , dy = w[c + 1] - w[a + 1]
+            , dz = w[c + 2] - w[a + 2]
+            , ex = w[d] - w[a]
+            , ey = w[d + 1] - w[a + 1]
+            , ez = w[d + 2] - w[a + 2]
+            , nx = dy * ez - dz * ey
+            , ny = dz * ex - dx * ez
+            , nz = dx * ey - dy * ex;
+          for (let k = j; k < j + 3; k++) {
+            const p = ids[k] * 3;
+            n[p] += nx;
+            n[p + 1] += ny;
+            n[p + 2] += nz
+          }
+        }
+        b.dirty = true;
+      }
+      function spring(b, local) {
+        const weights = new Float32Array(b.n)
+          , radius = clamp(Math.max(...b.size) * .36, .38, 1.24);
+        for (let i = 0, j = 0; i < b.n; i++,
+        j += 3) {
+          let x = b.rest[j] - local[0]
+            , y = b.rest[j + 1] - local[1]
+            , z = b.rest[j + 2] - local[2];
+          weights[i] = Math.exp(-(x * x + y * y + z * z) / (radius * radius * .63))
+        }
+        const m = {
+          weights,
+          d: zero(),
+          v: zero(),
+          hold: false
+        };
+        if (b.modes.length >= 5)
+          b.modes.shift();
+        b.modes.push(m);
+        b.settled = false;
+        return m
+      }
+      function physics(dt) {
+        for (const b of pieces) {
+          const hold = active?.kind === 'grab' && active.b === b
+            , heating = active?.kind === 'heat' && active.b === b;
+          if (b.settled && !hold && !heating)
+            continue;
+          if (hold) {
+            const desired = sub(active.target, active.startPoint)
+              , travel = length(desired)
+              , share = .28 + .72 * clamp((travel - .26) / 1.15, 0, 1)
+              , shift = sub(b.pos, active.startPos);
+            for (let k = 0; k < 3; k++) {
+              b.vel[k] += ((desired[k] * share - shift[k]) * 65 - b.vel[k] * 11) * dt;
+              active.m.goal[k] = clamp((desired[k] - shift[k]) * .94 - active.contactNormal[k] * .14, -.95, .95)
+            }
+          }
+          b.vel[1] -= (hold ? 1.5 : 12) * dt;
+          const friction = Math.exp(-(b.pos[1] <= b.floor + b.support + .06 && !hold ? 4.4 : .42) * dt);
+          if (b.cutAxis && !hold && b.lastFloor <= b.support + .035 && b.sample) {
+            let lx = Infinity
+              , lz = Infinity
+              , hx = -Infinity
+              , hz = -Infinity;
+            const w = b.world;
+            for (const i of b.sample) {
+              const j = i * 3;
+              if (w[j + 1] > b.support + .075)
+                continue;
+              lx = Math.min(lx, w[j]);
+              hx = Math.max(hx, w[j]);
+              lz = Math.min(lz, w[j + 2]);
+              hz = Math.max(hz, w[j + 2])
+            }
+            if (lx < Infinity) {
+              const [rx,ry,rz] = b.angle
+                , [x,y,z] = b.com
+                , xa = Math.cos(ry) * x + Math.sin(ry) * z
+                , za = -Math.sin(ry) * x + Math.cos(ry) * z
+                , ya = Math.cos(rx) * y - Math.sin(rx) * za;
+              const gx = b.pos[0] + Math.cos(rz) * xa - Math.sin(rz) * ya
+                , gz = b.pos[2] + Math.sin(rx) * y + Math.cos(rx) * za;
+              b.spin[0] += clamp(gz - clamp(gz, lz, hz), -.75, .75) * 11 * dt;
+              b.spin[2] -= clamp(gx - clamp(gx, lx, hx), -.75, .75) * 11 * dt
+            }
+          }
+          for (let k = 0; k < 3; k++) {
+            if (k !== 1)
+              b.vel[k] *= friction;
+            b.pos[k] += b.vel[k] * dt;
+            b.spin[k] *= Math.exp(-(b.cutAxis ? 2.5 : 4) * dt);
+            if (k !== 1 && !b.cutAxis)
+              b.spin[k] -= b.angle[k] * 12 * dt;
+            b.angle[k] += b.spin[k] * dt;
+            b.speed[k] += (-88 * b.wob[k] - 5.6 * b.speed[k]) * dt;
+            b.wob[k] = clamp(b.wob[k] + b.speed[k] * dt, -.46, .46)
+          }
+          const radius = Math.hypot(b.pos[0], b.pos[2]);
+          b.support = radius < 2.9 ? 0 : -.22;
+          const ground = b.floor + b.support + .012;
+          if (b.pos[1] < ground) {
+            if (b.vel[1] < -1.4) {
+              b.speed[1] = Math.max(-4, b.vel[1] * .75);
+              if (b.vel[1] < -3)
+                sound(140, .16, .42, 'sine', .035)
+            }
+            b.pos[1] = ground;
+            b.vel[1] = Math.max(0, -b.vel[1] * .26)
+          }
+          // A soft boundary keeps thrown pieces within reach of the camera.
+          if (radius > 3.45) {
+            const k = (radius - 3.45) * 35 * dt;
+            b.vel[0] -= b.pos[0] / radius * k;
+            b.vel[2] -= b.pos[2] / radius * k
+          }
+          for (const m of b.modes) {
+            for (let k = 0; k < 3; k++) {
+              m.v[k] += ((m.hold ? m.goal[k] : 0) - m.d[k]) * (m.hold ? 135 : 84) * dt - m.v[k] * (m.hold ? 11 : 5.2) * dt;
+              m.d[k] += m.v[k] * dt
+            }
+          }
+          b.modes = b.modes.filter(m => m.hold || length(m.d) + length(m.v) > .005);
+          if (!hold && !heating && !b.modes.length && length(b.speed) + length(b.wob) + length(b.spin) < .006 && Math.hypot(b.vel[0], b.vel[2]) < .008 && b.pos[1] <= ground + .002 && radius < 3.46) {
+            b.settled = true;
+            b.wob = zero();
+            b.speed = zero()
+          }
+          updateSurface(b);
+        }
+      }
+    </script>
+    <script>
+      let W = 1, H = 1, dpr = 1, zoom = 1, yaw = .43, pitch = .31, eye, right, up, back, aim, ppu, screenY, viewMatrix;
+      const distance = 15.4;
+      function camera() {
+        back = [Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)];
+        right = [Math.cos(yaw), 0, -Math.sin(yaw)];
+        up = cross(back, right);
+        aim = [0, .81, 0];
+        eye = add(aim, mul(back, distance));
+        const baseScale = Math.min(W * (W < 600 ? .224 : .198), H * (H < 440 ? .178 : .185));
+        ppu = baseScale * zoom;
+        const controlsSpace = H < 440 ? 66 : 120;
+        screenY = W < 600 ? H * .475 : Math.min(H * .448, H - controlsSpace - baseScale * 2.19);
+        const A = 2 * ppu * distance / W
+          , B = 2 * ppu * distance / H
+          , s = 1 - 2 * screenY / H
+          , near = .12
+          , far = 160
+          , C = (far + near) / (far - near)
+          , D = -2 * far * near / (far - near);
+        const t = dot(back, eye)
+          , v = new Float32Array(16);
+        for (let k = 0; k < 3; k++) {
+          v[k * 4] = A * right[k];
+          v[k * 4 + 1] = B * up[k] - s * back[k];
+          v[k * 4 + 2] = -C * back[k];
+          v[k * 4 + 3] = -back[k]
+        }
+        v[12] = -A * dot(right, eye);
+        v[13] = -B * dot(up, eye) + s * t;
+        v[14] = C * t + D;
+        v[15] = t;
+        viewMatrix = v;
+      }
+      function project(p) {
+        const rel = sub(p, aim)
+          , z = 1 - dot(rel, back) / distance;
+        return [W * .5 + ppu * dot(rel, right) / z, screenY - ppu * dot(rel, up) / z, z]
+      }
+      function ray(x, y) {
+        return norm(add(mul(back, -distance), add(mul(right, (x - W * .5) / ppu), mul(up, (screenY - y) / ppu))))
+      }
+      function onViewPlane(x, y, p) {
+        const d = ray(x, y);
+        return add(eye, mul(d, dot(sub(p, eye), back) / dot(d, back)))
+      }
+      function hit(x, y) {
+        const d = ray(x, y);
+        let best = null
+          , near = Infinity;
+        for (const b of pieces) {
+          const ids = b.indices
+            , w = b.world;
+          const bounding = length(b.size) * .68 + 1.3
+            , dt = dot(sub(b.pos, eye), d);
+          if (length(sub(add(eye, mul(d, dt)), b.pos)) > bounding)
+            continue;
+          for (let i = 0; i < ids.length; i += 3) {
+            const a = ids[i] * 3
+              , c = ids[i + 1] * 3
+              , e = ids[i + 2] * 3
+              , ax = w[a]
+              , ay = w[a + 1]
+              , az = w[a + 2]
+              , ex = w[c] - ax
+              , ey = w[c + 1] - ay
+              , ez = w[c + 2] - az
+              , fx = w[e] - ax
+              , fy = w[e + 1] - ay
+              , fz = w[e + 2] - az;
+            const hx = d[1] * fz - d[2] * fy
+              , hy = d[2] * fx - d[0] * fz
+              , hz = d[0] * fy - d[1] * fx
+              , det = ex * hx + ey * hy + ez * hz;
+            if (det < .0000001)
+              continue;
+            const tx = eye[0] - ax
+              , ty = eye[1] - ay
+              , tz = eye[2] - az
+              , u = (tx * hx + ty * hy + tz * hz) / det;
+            if (u < 0 || u > 1)
+              continue;
+            const qx = ty * ez - tz * ey
+              , qy = tz * ex - tx * ez
+              , qz = tx * ey - ty * ex
+              , v = (d[0] * qx + d[1] * qy + d[2] * qz) / det;
+            if (v < 0 || u + v > 1)
+              continue;
+            const t = (fx * qx + fy * qy + fz * qz) / det;
+            if (t <= 0 || t >= near)
+              continue;
+            near = t;
+            best = {
+              b,
+              ids: [ids[i], ids[i + 1], ids[i + 2]],
+              weights: [1 - u - v, u, v],
+              p: add(eye, mul(d, t)),
+              normal: norm([ey * fz - ez * fy, ez * fx - ex * fz, ex * fy - ey * fx])
+            }
+          }
+        }
+        return best;
+      }
+      function weighted(arr, h) {
+        const v = zero();
+        h.ids.forEach( (i, j) => {
+          for (let k = 0; k < 3; k++)
+            v[k] += arr[i * 3 + k] * h.weights[j]
+        }
+        );
+        return v
+      }
+      function revolve(profile, count=150) {
+        const pos = []
+          , normal = []
+          , idx = [];
+        for (const [r,y,nr,ny] of profile) {
+          for (let i = 0; i < count; i++) {
+            const t = TAU * i / count
+              , c = Math.cos(t)
+              , s = Math.sin(t);
+            pos.push(r * c, y, r * s);
+            normal.push(nr * c, ny, nr * s)
+          }
+        }
+        for (let j = 0; j < profile.length - 1; j++)
+          for (let i = 0; i < count; i++) {
+            const a = j * count + i
+              , b = j * count + (i + 1) % count;
+            idx.push(a, a + count, b, b, a + count, b + count)
+          }
+        return {
+          pos,
+          normal,
+          idx
+        }
+      }
+      const platform = revolve([[2.87, -.225, .5, -.8], [2.923, -.193, .92, -.28], [2.93, -.164, 1, 0], [2.93, -.142, 1, 0], [2.913, -.132, 1, 0], [2.913, -.113, 1, 0], [2.94, -.096, 1, 0], [2.94, -.044, .98, .15], [2.927, -.026, .7, .71], [2.898, -.008, .28, .96], [2.86, 0, 0, 1], [.001, 0, 0, 1]]);
+      const groundMesh = {
+        pos: [-95, -.229, -95, -95, -.229, 95, 95, -.229, -95, 95, -.229, 95],
+        normal: [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
+        idx: [0, 1, 2, 2, 1, 3]
+      };
+      const vertexShader = `
+attribute vec3 aPos,aNorm,aMat;attribute float aSkin;uniform mat4 uVP;varying vec3 P,N,M;varying float S;
+void main(){P=aPos;N=normalize(aNorm+.00000000001);M=aMat;S=aSkin;gl_Position=uVP*vec4(P,1.);}
+`;
+      const fragmentShader = `
+precision highp float;
+varying vec3 P,N,M;varying float S;
+uniform int uKind,uCount;uniform vec3 uEye,uHeat,uColor;uniform vec2 uRes;uniform vec4 uShadows[16];uniform sampler2D uScene,uExit;uniform float uTime,uHot;
+float sat(float x){return clamp(x,0.,1.);}
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float line(float d,float width,float blur){return 1.-smoothstep(width,width+blur,abs(d));}
+vec3 palette(float x){
+ vec3 c=vec3(.49,.19,.88);c=mix(c,vec3(.35,.25,.98),smoothstep(.015,.13,x));c=mix(c,vec3(.008,.60,.98),smoothstep(.14,.26,x));
+ c=mix(c,vec3(.04,.87,.78),smoothstep(.27,.37,x));c=mix(c,vec3(.42,.91,.26),smoothstep(.40,.50,x));
+ c=mix(c,vec3(1.,.85,.16),smoothstep(.50,.60,x));c=mix(c,vec3(1.,.49,.105),smoothstep(.61,.70,x));
+ c=mix(c,vec3(1.,.245,.29),smoothstep(.71,.81,x));c=mix(c,vec3(.99,.34,.53),smoothstep(.83,.95,x));return c;
+}
+float boxLight(vec3 r,vec3 d,vec3 across,vec2 width,float blur){
+ vec3 D=normalize(d),a=normalize(across-D*dot(across,D)),b=cross(D,a);float front=dot(r,D);
+ vec2 q=abs(vec2(dot(r,a),dot(r,b)))/max(front,.01);
+ return (1.-smoothstep(width.x,width.x+blur,q.x))*(1.-smoothstep(width.y,width.y+blur,q.y))*smoothstep(.03,.4,front);
+}
+float glint(vec3 r,vec3 d,float power){return pow(max(0.,dot(r,normalize(d))),power);}
+vec2 packNormal(vec3 n){n/=abs(n.x)+abs(n.y)+abs(n.z);return (n.z>=0.?n.xy:(1.-abs(n.yx))*sign(n.xy))*.5+.5;}
+vec3 readNormal(vec2 e){vec2 f=e*2.-1.;vec3 n=vec3(f,1.-abs(f.x)-abs(f.y));n.xy+=vec2(n.x>=0.?-1.:1.,n.y>=0.?-1.:1.)*max(0.,-n.z);return normalize(n);}
+vec3 random3(vec3 p){p=fract(p*vec3(.1031,.11369,.13787));p+=dot(p,p.yxz+19.19);return fract((p.xxy+p.yxx)*p.zyx);}
+// Ray traversal makes bubbles sit at distinct depths, including through a fresh cut.
+vec3 bubbles(vec3 color,vec3 origin,vec3 direction,float thickness){
+ vec3 d=normalize(direction+vec3(.00001)),o=origin*2.75,cell=floor(o);
+ vec3 steps=sign(d),delta=1./max(abs(d),vec3(.00001)),toEdge=(steps*(cell-o)+.5+.5*steps)*delta;
+ float travel=0.;
+ for(int i=0;i<16;i++){
+  if(travel>thickness*2.75)break;
+  vec3 rnd=random3(cell+vec3(4.7,7.1,2.2)),center=cell+.13+.74*rnd,offset=center-o;
+  float t=dot(offset,d),radius=.023+.12*pow(rnd.y,3.);
+  vec3 perp=offset-t*d;float q=length(perp)/radius;
+  if(rnd.x>.22&&t>0.&&t<thickness*2.75&&q<1.18){
+   float mask=(1.-smoothstep(.84,1.15,q))*exp(-t*.24);
+   vec3 bn=normalize(-perp/max(radius,.001)-d*sqrt(max(0.,1.-q*q)));float shine=pow(sat(dot(bn,normalize(vec3(-.55,.68,.49)))),3.);
+   color*=1.-mask*(.12+.46*smoothstep(.52,1.,q));color+=vec3(.91,.96,1.)*mask*(.075+.78*shine);
+  }
+  vec3 axis=step(toEdge,toEdge.yzx)*step(toEdge,toEdge.zxy);travel=min(toEdge.x,min(toEdge.y,toEdge.z));toEdge+=axis*delta;cell+=steps*axis;
+ }
+ return color;
+}
+void main(){
+ vec3 n=normalize(N),v=normalize(uEye-P),r=reflect(-v,n);vec2 uv=gl_FragCoord.xy/uRes;vec3 col=vec3(0.);
+ float grain=(hash(gl_FragCoord.xy)-.5)*.009;
+ float distEye=length(P-uEye);
+ if(uKind==6){float dep=distEye/48.;gl_FragColor=vec4(packNormal(n),floor(dep*255.)/255.,fract(dep*255.));return;}
+ if(uKind<2){
+  float rr=length(P.xz),focus=exp(-dot(P.xz,P.xz)*.025);
+  if(uKind==0){
+   vec2 q=P.xz*1.34;vec2 lineDist=abs(fract(q+.5)-.5);float blur=clamp(distEye*.0008,.009,.09);
+   float grid=1.-smoothstep(.003,.003+blur,min(lineDist.x,lineDist.y));
+   vec2 major=abs(fract(q/5.+.5)-.5);float grid2=1.-smoothstep(.0005,.0005+blur*.23,min(major.x,major.y));
+   col=mix(vec3(.088,.098,.107),vec3(.185,.202,.215),focus*.88);
+   col+=vec3(.081,.087,.09)*(grid*.60+grid2*.31)*exp(-rr*.069);
+   float shadow=exp(-pow(length((P.xz-vec2(.30,.08))*vec2(.90,1.)),2.)*.139);col*=1.-.55*shadow;
+   col=mix(col,vec3(.095,.104,.114),smoothstep(10.,34.,rr));
+  }else{
+   float angle=atan(P.z,P.x);float key=.5+.5*dot(n,normalize(vec3(-.8,.7,.55)));
+   col=mix(vec3(.138,.15,.16),vec3(.253,.268,.279),key*.73);
+   if(n.y>.65){
+    col+=vec3(.031)*cos(angle+1.2)*rr/3.;col+=.0035*sin(rr*890.);
+    float outer=line(rr-2.872,.001,.005);float inner=line(rr-2.62,.001,.005);col+=vec3(.16)*outer+vec3(.075)*inner;
+    float idx=angle/6.2831853*120.;float tick=1.-smoothstep(.025,.115,abs(fract(idx+.5)-.5));float maj=1.-step(.5,mod(floor(idx+.5)+120.,5.));
+    col+=vec3(.22,.22,.20)*tick*smoothstep(2.755-maj*.068,2.766-maj*.068,rr)*(1.-smoothstep(2.822,2.828,rr))*(.62+.38*maj);
+    float marker=1.-smoothstep(.004,.010,abs(sin(angle*2.)));col=mix(col,vec3(.92,.63,.28),marker*smoothstep(2.67,2.687,rr)*(1.-smoothstep(2.84,2.85,rr))*.86);
+    for(int i=0;i<16;i++){if(i>=uCount)break;vec4 sh=uShadows[i];vec2 delta=P.xz-sh.xy;float d=length(delta)/max(.13,sh.z),h=max(0.,sh.w);
+     float ao=exp(-d*d*1.85-h*.92);float contact=(1.-smoothstep(.82,1.11,d))*exp(-h*3.3);col*=1.-.75*max(ao,contact);
+     float c=exp(-pow((d-1.02)*2.75,2.))*exp(-h*1.4);vec3 caustic=.53+.44*cos(vec3(3.7,2.0,.15)+atan(delta.x+.02,delta.y)*1.7);col+=caustic*c*.115;
+    }
+   }else{col*=.66+.22*cos(angle-1.);col+=vec3(.28)*line(P.y+.05,.002,.010)*key;col*=1.-.53*line(P.y+.124,.002,.014);}
+  }
+  col+=grain;col*=1.-.16*pow(length(uv-vec2(.5,.53)),1.3);
+ }else if(uKind==2||uKind==4){
+  float h=clamp(M.y/2.05,0.,1.),a=atan(M.z,M.x);float cap=step(.5,S);
+  n=normalize(n+vec3(sin(M.z*8.+M.y*2.)*.010,0.,cos(M.x*7.-M.y)*.009));
+  r=reflect(-v,n);float nv=sat(dot(n,v)),edge=pow(1.-nv,2.15);
+  vec4 exitData=texture2D(uExit,uv);float thickness=clamp((exitData.b+exitData.a/255.)*48.-distEye,.008,4.8);
+  vec3 backN=readNormal(exitData.rg),insideRay=refract(-v,n,1./1.39);
+  float band=h+.012*sin(M.x*2.45+M.z*1.8+.5)+.008*cos(M.z*3.3-M.x*.4)+.007*sin(12.*a)*(1.-n.y*n.y);
+  vec3 pigment=uKind==4?uColor:palette(band);
+  vec3 key=normalize(vec3(-.62,.84,.48)),rim=normalize(vec3(.65,.33,-.77));float wrap=.5+.5*dot(n,key);
+  float lobe=.5+.5*cos(a*12.);float depth=sat(.3+.58*nv+.09*(1.-lobe));float inner=.5+.5*sin(a*12.+1.3);
+  vec2 offset=vec2(n.x*.054+backN.x*.016,-n.y*.037+backN.y*.021)*(.30+.70*sat(thickness));
+  vec3 through=texture2D(uScene,clamp(uv+offset,vec2(.002),vec2(.998))).rgb;
+  float light=.66+.29*wrap+.12*max(dot(n,rim),0.)+.09*lobe*(1.-cap);
+  float density=1.-exp(-thickness*1.24);vec3 innerPig=uKind==4?pigment:palette(band+insideRay.y*min(thickness,.9)*.19);
+  vec3 gel=mix(pigment,innerPig,.29*density);col=gel*light*(.46+.41*density);
+  col+=through*(vec3(.35)+gel*.73)*(.94-.66*density);
+  float internal=pow(sat(dot(backN,normalize(vec3(.8,.5,-.48)))),2.);
+  col+=gel*(.055*inner+.17*internal+.08*pow(1.-nv,1.4))*(1.-cap);
+  col+=.042*vec3(1.,.7,.74)*max(n.y,0.);
+  if(uKind==2)col=bubbles(col,M+insideRay*.012,insideRay,min(thickness,2.8));
+  // Surrounding softboxes are reflected on both interfaces of the translucent gel.
+  float box1=boxLight(r,vec3(-.72,.94,.66),vec3(.9,0.,1.),vec2(.50,.13),.10);
+  float box2=boxLight(r,vec3(.90,.56,-.37),vec3(0.,1.,0.),vec2(.60,.069),.085);
+  float box3=boxLight(r,vec3(-.72,.44,-.87),vec3(1.,0.,0.),vec2(.47,.079),.061);
+  float box4=boxLight(r,vec3(-.95,.15,.12),vec3(0.,1.,0.),vec2(.46,.045),.066);
+  float bloom=glint(r,vec3(-.6,.85,.6),7.)*.13+glint(r,vec3(.8,.4,-.6),10.)*.16;
+  float spec=(.63*box1+.59*box2+.72*box3+.45*box4)*(.81+.25*edge)+bloom;
+  float coreShine=pow(max(0.,cos(a*12.-1.85)),12.)*.13*(1.-cap)*(1.-n.y*n.y);
+  col+=coreShine*(vec3(.72,.78,.86)+.25*pigment);
+  col=mix(col,vec3(1.,.99,1.),sat(spec));col+=vec3(.16,.23,.27)*edge;
+  col+=vec3(.81,.92,.98)*glint(reflect(insideRay,-backN),vec3(-.5,.65,.5),15.)*.19*density;
+  if(uKind==2)col*=.78+.22*smoothstep(.008,.103,h);
+  if(cap>.5){float faint=sin(M.y*68.+M.z*9.+M.x*5.);col+=vec3(.029,.022,.017)*faint*.45;col=mix(col,pigment*1.03+.055,.12);}
+  float hot=uHot*exp(-dot(P-uHeat,P-uHeat)*8.);col+=vec3(.33,.103,.014)*hot;
+  col+=grain*.47;
+ }else if(uKind==3){
+  float diffuse=.5+.5*dot(n,normalize(vec3(-.6,1.,.65)));float stripe=pow(.5+.5*sin(r.y*9.+r.x*3.),3.);
+  col=uColor*(.45+.59*diffuse+.32*stripe)+vec3(.69,.73,.76)*(glint(r,vec3(-.5,.8,.6),16.)+.55*glint(r,vec3(.8,.2,.5),12.));
+ }else{float flick=.95+.05*sin(uTime*55.);col=mix(vec3(1.,.36,.045),vec3(1.,.96,.66),sat(1.-M.y)) *flick;}
+ gl_FragColor=vec4(col,1.);
+}`;
+      let gl = null, ctx2 = null, program, loc = {}, fbo, sceneTex, exitTex, depthBuffer, worldGPU, deckGPU, blitProgram, quadBuf, blitPos;
+      function shaderProgram(vs, fs) {
+        const p = gl.createProgram();
+        for (const [kind,src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) {
+          const s = gl.createShader(kind);
+          gl.shaderSource(s, src);
+          gl.compileShader(s);
+          if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+            throw Error(gl.getShaderInfoLog(s));
+          gl.attachShader(p, s);
+          gl.deleteShader(s)
+        }
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS))
+          throw Error(gl.getProgramInfoLog(p));
+        return p;
+      }
+      function buffer(target, data, usage) {
+        const b = gl.createBuffer();
+        gl.bindBuffer(target, b);
+        gl.bufferData(target, data, usage || gl.STATIC_DRAW);
+        return b
+      }
+      function gpuMesh(pos, normal, idx, material=null, skin=null, dynamic=false) {
+        return {
+          p: buffer(gl.ARRAY_BUFFER, new Float32Array(pos), dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW),
+          n: buffer(gl.ARRAY_BUFFER, new Float32Array(normal), dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW),
+          m: material ? buffer(gl.ARRAY_BUFFER, new Float32Array(material)) : null,
+          s: skin ? buffer(gl.ARRAY_BUFFER, new Float32Array(skin)) : null,
+          i: buffer(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx)),
+          count: idx.length
+        };
+      }
+      function freeMesh(g) {
+        if (g && gl)
+          for (const k of ['p', 'n', 'm', 's', 'i'])
+            if (g[k])
+              gl.deleteBuffer(g[k])
+      }
+      function prepareGL() {
+        gl = canvas.getContext('webgl', {
+          alpha: false,
+          antialias: true,
+          powerPreference: 'high-performance',
+          preserveDrawingBuffer: false
+        });
+        if (!gl) {
+          ctx2 = canvas.getContext('2d');
+          return
+        }
+        program = shaderProgram(vertexShader, fragmentShader);
+        gl.useProgram(program);
+        for (const s of ['aPos', 'aNorm', 'aMat', 'aSkin'])
+          loc[s] = gl.getAttribLocation(program, s);
+        for (const s of ['uVP', 'uKind', 'uEye', 'uRes', 'uShadows[0]', 'uCount', 'uScene', 'uExit', 'uHeat', 'uHot', 'uTime', 'uColor'])
+          loc[s] = gl.getUniformLocation(program, s);
+        gl.uniform1i(loc.uExit, 1);
+        worldGPU = gpuMesh(groundMesh.pos, groundMesh.normal, groundMesh.idx);
+        deckGPU = gpuMesh(platform.pos, platform.normal, platform.idx);
+        blitProgram = shaderProgram('attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}', 'precision mediump float;varying vec2 uv;uniform sampler2D img;void main(){gl_FragColor=texture2D(img,uv);}');
+        blitPos = gl.getAttribLocation(blitProgram, 'p');
+        quadBuf = buffer(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]));
+        fbo = gl.createFramebuffer();
+        sceneTex = gl.createTexture();
+        exitTex = gl.createTexture();
+        depthBuffer = gl.createRenderbuffer();
+        for (const tex of [sceneTex, exitTex]) {
+          gl.bindTexture(gl.TEXTURE_2D, tex);
+          for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER])
+            gl.texParameteri(gl.TEXTURE_2D, p, tex === sceneTex ? gl.LINEAR : gl.NEAREST);
+          for (const p of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T])
+            gl.texParameteri(gl.TEXTURE_2D, p, gl.CLAMP_TO_EDGE)
+        }
+      }
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        W = rect.width;
+        H = rect.height;
+        dpr = Math.min(window.devicePixelRatio || 1, 1.8, Math.sqrt(3500000 / Math.max(1, W * H)));
+        canvas.width = Math.max(1, Math.round(W * dpr));
+        canvas.height = Math.max(1, Math.round(H * dpr));
+        camera();
+        axes();
+        if (!gl)
+          return;
+        const w = canvas.width
+          , h = canvas.height;
+        for (const tex of [sceneTex, exitTex]) {
+          gl.bindTexture(gl.TEXTURE_2D, tex);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+        }
+        gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, sceneTex, 0);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, w, h);
+      }
+      function attrib(id, buf, n) {
+        if (buf) {
+          gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+          gl.enableVertexAttribArray(id);
+          gl.vertexAttribPointer(id, n, gl.FLOAT, false, 0, 0)
+        } else {
+          gl.disableVertexAttribArray(id);
+          if (n === 1)
+            gl.vertexAttrib1f(id, 0);
+          else
+            gl.vertexAttrib3f(id, 0, 0, 0)
+        }
+      }
+      function draw(g, kind, color) {
+        gl.uniform1i(loc.uKind, kind);
+        if (color)
+          gl.uniform3fv(loc.uColor, color);
+        attrib(loc.aPos, g.p, 3);
+        attrib(loc.aNorm, g.n, 3);
+        attrib(loc.aMat, g.m, 3);
+        attrib(loc.aSkin, g.s, 1);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.i);
+        gl.drawElements(gl.TRIANGLES, g.count, gl.UNSIGNED_SHORT, 0)
+      }
+      function drawBody(b, kind=2) {
+        if (!b.gpu)
+          b.gpu = gpuMesh(b.world, b.normal, b.indices, b.mat, b.skin, true);
+        else if (b.dirty) {
+          for (const [buf,val] of [[b.gpu.p, b.world], [b.gpu.n, b.normal]]) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, val)
+          }
+        }
+        b.dirty = false;
+        draw(b.gpu, kind)
+      }
+      function renderGL() {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, sceneTex, 0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthMask(true);
+        gl.clearColor(.095, .104, .114, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(program);
+        gl.uniformMatrix4fv(loc.uVP, false, viewMatrix);
+        gl.uniform3fv(loc.uEye, eye);
+        gl.uniform2f(loc.uRes, canvas.width, canvas.height);
+        gl.uniform3fv(loc.uHeat, heatSpot || [99, 99, 99]);
+        gl.uniform1f(loc.uHot, heatSpot ? 1 : 0);
+        gl.uniform1f(loc.uTime, time);
+        const shadows = new Float32Array(64);
+        pieces.slice(0, 16).forEach( (b, i) => shadows.set([b.pos[0], b.pos[2], (b.size[0] + b.size[2]) * .25, Math.max(0, b.pos[1] - b.floor)], i * 4));
+        gl.uniform4fv(loc['uShadows[0]'], shadows);
+        gl.uniform1i(loc.uCount, Math.min(16, pieces.length));
+        draw(worldGPU, 0);
+        draw(deckGPU, 1);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, exitTex, 0);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.CULL_FACE);
+        gl.cullFace(gl.FRONT);
+        for (const b of pieces)
+          drawBody(b, 6);
+        gl.disable(gl.CULL_FACE);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.disable(gl.DEPTH_TEST);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(blitProgram);
+        for (const v of ['aPos', 'aNorm', 'aMat', 'aSkin'])
+          gl.disableVertexAttribArray(loc[v]);
+        attrib(blitPos, quadBuf, 2);
+        gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.disableVertexAttribArray(blitPos);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, exitTex);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.useProgram(program);
+        gl.colorMask(false, false, false, false);
+        draw(deckGPU, 1);
+        gl.colorMask(true, true, true, true);
+        gl.enable(gl.CULL_FACE);
+        gl.cullFace(gl.BACK);
+        for (const b of pieces)
+          drawBody(b);
+        gl.disable(gl.CULL_FACE);
+        drawAccessories();
+      }
+    </script>
+    <script>
+      function cutBody(b, plane, n) {
+        const src = new Array(b.n)
+          , distanceTo = new Float32Array(b.n);
+        let low = Infinity
+          , high = -Infinity;
+        for (let i = 0; i < b.n; i++) {
+          const p = point(b.world, i)
+            , d = dot(sub(p, plane), n) + .000003;
+          distanceTo[i] = d;
+          low = Math.min(low, d);
+          high = Math.max(high, d);
+          src[i] = {
+            p,
+            m: point(b.mat, i),
+            cap: b.skin[i],
+            key: 'v' + i
+          }
+        }
+        if (low > -.085 || high < .085)
+          return null;
+        const halves = [{
+          v: [],
+          idx: [],
+          map: new Map()
+        }, {
+          v: [],
+          idx: [],
+          map: new Map()
+        }]
+          , edges = new Map()
+          , nodes = new Map();
+        function vertex(h, v) {
+          let j = h.map.get(v.key);
+          if (j === undefined) {
+            j = h.v.length;
+            h.map.set(v.key, j);
+            h.v.push(v)
+          }
+          return j
+        }
+        function intersect(i, j) {
+          const key = i < j ? i + ',' + j : j + ',' + i;
+          if (edges.has(key))
+            return edges.get(key);
+          const t = distanceTo[i] / (distanceTo[i] - distanceTo[j])
+            , v = {
+            p: mix(src[i].p, src[j].p, t),
+            m: mix(src[i].m, src[j].m, t),
+            cap: src[i].cap,
+            key
+          };
+          edges.set(key, v);
+          return v
+        }
+        function node(v) {
+          const key = v.p.map(x => Math.round(x * 50000)).join('/');
+          if (!nodes.has(key))
+            nodes.set(key, {
+              v,
+              links: new Set()
+            });
+          return nodes.get(key)
+        }
+        const ids = b.indices;
+        for (let k = 0; k < ids.length; k += 3) {
+          const tri = [ids[k], ids[k + 1], ids[k + 2]]
+            , points = [[], []]
+            , crossed = [];
+          for (let i = 0; i < 3; i++) {
+            const a = tri[i]
+              , c = tri[(i + 1) % 3]
+              , side = +(distanceTo[a] > 0);
+            points[side].push(src[a]);
+            if (side !== +(distanceTo[c] > 0)) {
+              const v = intersect(a, c);
+              points[0].push(v);
+              points[1].push(v);
+              crossed.push(v)
+            }
+          }
+          if (crossed.length === 2) {
+            const a = node(crossed[0])
+              , c = node(crossed[1]);
+            if (a !== c) {
+              a.links.add(c);
+              c.links.add(a)
+            }
+          }
+          for (let side = 0; side < 2; side++) {
+            const h = halves[side]
+              , q = points[side].map(v => vertex(h, v));
+            for (let i = 1; i + 1 < q.length; i++)
+              h.idx.push(q[0], q[i], q[i + 1])
+          }
+        }
+        const U = norm(cross(n, Math.abs(n[1]) < .9 ? [0, 1, 0] : [1, 0, 0]))
+          , V = cross(n, U)
+          , visited = new Set();
+        // Trace each closed rim separately. Ear clipping also preserves concave flutes.
+        for (const start of nodes.values()) {
+          if (visited.has(start))
+            continue;
+          const loop = [];
+          let cur = start
+            , prev = null;
+          while (cur && !visited.has(cur)) {
+            visited.add(cur);
+            loop.push(cur.v);
+            const next = [...cur.links].find(k => k !== prev && !visited.has(k));
+            prev = cur;
+            cur = next
+          }
+          if (loop.length < 3)
+            continue;
+          const flat = loop.map(v => [dot(v.p, U), dot(v.p, V)])
+            , turn = (a, c, d) => (c[0] - a[0]) * (d[1] - a[1]) - (c[1] - a[1]) * (d[0] - a[0]);
+          const rim = loop.map( (_, i) => i);
+          let area = 0;
+          for (let i = 0; i < flat.length; i++) {
+            const a = flat[i]
+              , c = flat[(i + 1) % flat.length];
+            area += a[0] * c[1] - a[1] * c[0]
+          }
+          if (area < 0)
+            rim.reverse();
+          const cp = mul(loop.reduce( (sum, v) => add(sum, v.p), zero()), 1 / loop.length)
+            , cm = mul(loop.reduce( (sum, v) => add(sum, v.m), zero()), 1 / loop.length)
+            , cf = [dot(cp, U), dot(cp, V)];
+          if (rim.every( (v, i) => turn(cf, flat[v], flat[rim[(i + 1) % rim.length]]) >= -.0000003)) {
+            const levels = clamp(Math.ceil(Math.max(...loop.map(v => length(sub(v.p, cp)))) / .24), 2, 12);
+            halves.forEach( (half, side) => {
+              const center = half.v.length;
+              half.v.push({
+                p: cp,
+                m: cm,
+                cap: 1
+              });
+              function face(a, c, d) {
+                if (side)
+                  half.idx.push(a, d, c);
+                else
+                  half.idx.push(a, c, d)
+              }
+              for (let k = 1; k <= levels; k++) {
+                const base = half.v.length
+                  , f = k / levels;
+                for (const i of rim)
+                  half.v.push({
+                    p: mix(cp, loop[i].p, f),
+                    m: mix(cm, loop[i].m, f),
+                    cap: 1
+                  });
+                for (let i = 0; i < rim.length; i++) {
+                  const a = base + i
+                    , c = base + (i + 1) % rim.length;
+                  if (k === 1)
+                    face(center, a, c);
+                  else {
+                    face(a - rim.length, a, c);
+                    face(a - rim.length, c, c - rim.length)
+                  }
+                }
+              }
+            }
+            );
+            continue;
+          }
+          // Long planar edges created by previous slices often carry redundant collinear points.
+          for (let i = rim.length - 1; i >= 0 && rim.length > 3; i--) {
+            const j = i % rim.length
+              , p = rim[(j + rim.length - 1) % rim.length]
+              , c = rim[j]
+              , d = rim[(j + 1) % rim.length];
+            if (Math.abs(turn(flat[p], flat[c], flat[d])) < .00000004)
+              rim.splice(j, 1)
+          }
+          const offsets = halves.map(h => {
+            const offset = h.v.length;
+            for (const v of loop)
+              h.v.push({
+                p: v.p,
+                m: v.m,
+                cap: 1
+              });
+            return offset
+          }
+          );
+          function capTri(a, c, d) {
+            halves[0].idx.push(offsets[0] + a, offsets[0] + c, offsets[0] + d);
+            halves[1].idx.push(offsets[1] + a, offsets[1] + d, offsets[1] + c)
+          }
+          while (rim.length > 3) {
+            let found = false;
+            for (let j = 0; j < rim.length; j++) {
+              const a = rim[(j + rim.length - 1) % rim.length]
+                , c = rim[j]
+                , d = rim[(j + 1) % rim.length];
+              if (turn(flat[a], flat[c], flat[d]) <= 1e-10)
+                continue;
+              let inside = false;
+              for (const k of rim) {
+                if (k === a || k === c || k === d)
+                  continue;
+                if (turn(flat[a], flat[c], flat[k]) > 1e-9 && turn(flat[c], flat[d], flat[k]) > 1e-9 && turn(flat[d], flat[a], flat[k]) > 1e-9) {
+                  inside = true;
+                  break
+                }
+              }
+              if (inside)
+                continue;
+              capTri(a, c, d);
+              rim.splice(j, 1);
+              found = true;
+              break
+            }
+            if (!found) {
+              for (let i = 1; i + 1 < rim.length; i++)
+                capTri(rim[0], rim[i], rim[i + 1]);
+              rim.length = 0;
+              break
+            }
+          }
+          if (rim.length === 3)
+            capTri(...rim);
+        }
+        if (halves.some(h => h.idx.length < 15 || h.v.length > 65535))
+          return null;
+        const parts = halves.map( (h, side) => {
+          const s = side ? 1 : -1
+            , q = makeBody(h.v, h.idx, b.vel.slice());
+          let dir = norm([n[0], 0, n[2]]);
+          if (Math.abs(n[1]) > .74)
+            dir = norm(add(dir, mul(right, .6)));
+          q.cutAxis = n.slice();
+          q.pos = add(q.pos, mul(dir, .085 * s));
+          q.vel = add(q.vel, mul(dir, s * 1.98));
+          q.vel[1] += .42 + .24 * s;
+          q.speed = [dir[0] * s * 1.4, .75, dir[2] * s * 1.4];
+          q.spin = [s * dir[2] * .44, s * 1.1, -s * dir[0] * .44];
+          q.support = b.support;
+          updateSurface(q);
+          return q
+        }
+        );
+        for (const a of [...pins, ...flows]) {
+          if (a.b !== b)
+            continue;
+          const p = weighted(b.world, a)
+            , side = +(dot(sub(p, plane), n) > 0)
+            , q = parts[side];
+          let best = 0
+            , min = Infinity;
+          const shift = sub(q.pos, mixBoundsCenter(halves[side].v));
+          const target = add(p, shift);
+          for (let i = 0; i < q.n; i++) {
+            const v = point(q.world, i)
+              , d = dot(sub(v, target), sub(v, target));
+            if (d < min) {
+              min = d;
+              best = i
+            }
+          }
+          a.b = q;
+          a.ids = [best, best, best];
+          a.weights = [1, 0, 0];
+          if (a.local)
+            a.local = point(q.rest, best)
+        }
+        freeMesh(b.gpu);
+        return parts;
+      }
+      function mixBoundsCenter(vertices) {
+        const lo = [Infinity, Infinity, Infinity]
+          , hi = mul(lo, -1);
+        for (const v of vertices)
+          for (let k = 0; k < 3; k++) {
+            lo[k] = Math.min(lo[k], v.p[k]);
+            hi[k] = Math.max(hi[k], v.p[k])
+          }
+        return mix(lo, hi, .5)
+      }
+      function sliceGesture(a) {
+        const dx = a.x - a.sx
+          , dy = a.y - a.sy
+          , len = Math.hypot(dx, dy);
+        if (len < 12) {
+          notice('划过果冻即可切开');
+          return
+        }
+        const n = norm(cross(ray(a.sx, a.sy), ray(a.x, a.y)));
+        let changed = false;
+        // Restrict the infinite cutting plane to the actual length of the user's stroke.
+        const hitBodies = new Set();
+        for (let i = 0, steps = Math.max(4, Math.min(55, Math.ceil(len / 8))); i <= steps; i++) {
+          const h = hit(a.sx + dx * i / steps, a.sy + dy * i / steps);
+          if (h)
+            hitBodies.add(h.b)
+        }
+        for (const b of hitBodies) {
+          if (pieces.length >= 16) {
+            notice('实验台已放满，可重置场景');
+            break
+          }
+          const next = cutBody(b, eye, n);
+          if (next) {
+            pieces.splice(pieces.indexOf(b), 1, ...next);
+            changed = true
+          }
+        }
+        if (changed) {
+          sound(520, .15, .16, 'triangle');
+          counts()
+        }
+      }
+      function rgbAt(h) {
+        const stops = [[0, [.49, .19, .88]], [.13, [.35, .25, .98]], [.26, [.008, .60, .98]], [.37, [.04, .87, .78]], [.50, [.42, .91, .26]], [.60, [1, .85, .16]], [.70, [1, .49, .105]], [.81, [1, .245, .29]], [1, [.99, .34, .53]]];
+        h = clamp(h, 0, 1);
+        for (let i = 1; i < stops.length; i++)
+          if (h <= stops[i][0])
+            return mix(stops[i - 1][1], stops[i][1], (h - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]));
+        return stops.at(-1)[1]
+      }
+      function counts() {
+        $('pieceCount').textContent = String(pieces.length).padStart(2, '0');
+        $('pinCount').textContent = String(pins.length).padStart(2, '0')
+      }
+      function placePin(h) {
+        if (pins.length >= 64) {
+          notice('实验台上的钉子已用完');
+          return
+        }
+        pins.push({
+          ...h,
+          born: time
+        });
+        const m = spring(h.b, weighted(h.b.rest, h));
+        m.v = mul(h.normal, -2.4);
+        h.b.speed[1] -= .6;
+        sound(750, .10, .36, 'triangle');
+        counts()
+      }
+      function roast(h, dt) {
+        const b = h.b
+          , p = weighted(b.world, h)
+          , local = weighted(b.rest, h)
+          , rad = .56;
+        heatSpot = p;
+        b.settled = false;
+        for (let i = 0, j = 0; i < b.n; i++,
+        j += 3) {
+          const x = b.rest[j] - local[0]
+            , y = b.rest[j + 1] - local[1]
+            , z = b.rest[j + 2] - local[2]
+            , d = x * x + y * y + z * z;
+          if (d > rad * rad * 4)
+            continue;
+          b.melt[i] = Math.min(1.17, b.melt[i] + dt * .33 * Math.exp(-d / (rad * rad * .74)));
+        }
+        let f = flows.find(q => q.b === b && length(sub(q.local, local)) < .25);
+        if (!f && flows.length < 90) {
+          f = {
+            ...h,
+            local,
+            color: rgbAt(weighted(b.mat, h)[1] / 2.05),
+            mass: 0,
+            reserve: 0,
+            extent: 0,
+            phase: Math.random() * TAU,
+            dropt: 0
+          };
+          flows.push(f)
+        }
+        if (f) {
+          f.mass = Math.min(2.1, f.mass + dt * .53);
+          f.reserve = Math.min(1.1, f.reserve + dt * .27)
+        }
+      }
+      function flowPath(f, t) {
+        const p = weighted(f.b.world, f)
+          , norm0 = norm(weighted(f.b.normal, f));
+        const out = norm([norm0[0] + (p[0] - f.b.pos[0]) * .15, 0, norm0[2] + (p[2] - f.b.pos[2]) * .15]);
+        const ground = f.b.support + .033;
+        const down = Math.min(Math.max(0, p[1] - ground), f.extent) * t
+          , off = .018 + down * .22 + .024 * Math.sin(t * Math.PI);
+        return [p[0] + out[0] * off + out[2] * .018 * Math.sin(t * 5 + f.phase), p[1] - down, p[2] + out[2] * off]
+      }
+      function meltPhysics(dt) {
+        heatSpot = null;
+        if (active?.kind === 'heat' && active.h)
+          roast(active.h, dt);
+        for (const f of flows) {
+          f.extent += (f.mass * 1.08 - f.extent) * Math.min(1, dt * 2.2);
+          if (f.mass < .12)
+            continue;
+          const tip = flowPath(f, 1);
+          f.dropt -= dt;
+          if (f.mass > .47 && f.reserve >= .22 && f.dropt <= 0 && drops.length < 70) {
+            f.reserve -= .22;
+            f.dropt = .96 + Math.random() * .7;
+            drops.push({
+              p: tip.slice(),
+              speed: 0,
+              color: f.color,
+              r: .036 + .026 * Math.min(1, f.mass),
+              ground: f.b.support + .022
+            });
+          }
+        }
+        for (let i = drops.length - 1; i >= 0; i--) {
+          const d = drops[i];
+          d.speed += dt * 3.8;
+          d.p[1] -= d.speed * dt;
+          if (d.p[1] <= d.ground) {
+            let q = pools.find(q => Math.hypot(q.p[0] - d.p[0], q.p[2] - d.p[2]) < .29);
+            if (q)
+              q.r = Math.min(.44, q.r + .018);
+            else if (pools.length < 90)
+              pools.push({
+                p: [d.p[0], d.ground, d.p[2]],
+                color: d.color,
+                r: d.r * 1.9
+              });
+            drops.splice(i, 1)
+          }
+        }
+      }
+      // Small accessory meshes are generated in the same coordinate system as the gel.
+      const accCache = new Map();
+      function accessory(key, mesh, kind, color) {
+        if (!gl)
+          return;
+        let g = accCache.get(key);
+        if (!g || g.count !== mesh.idx.length) {
+          if (g)
+            freeMesh(g);
+          g = gpuMesh(mesh.pos, mesh.normal, mesh.idx, mesh.mat || null, null, true);
+          accCache.set(key, g)
+        } else {
+          for (const [buf,arr] of [[g.p, mesh.pos], [g.n, mesh.normal]]) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(arr))
+          }
+        }
+        draw(g, kind, color)
+      }
+      function tube(centers, radii, sides=12, axis=null) {
+        const pos = []
+          , normal = []
+          , idx = []
+          , tangents = centers.map( (p, i) => axis || norm(sub(centers[Math.min(centers.length - 1, i + 1)], centers[Math.max(0, i - 1)])));
+        for (let j = 0; j < centers.length; j++) {
+          const t = tangents[j]
+            , a = norm(cross(t, Math.abs(t[1]) < .87 ? [0, 1, 0] : [1, 0, 0]))
+            , b = cross(t, a)
+            , prev = Math.max(0, j - 1)
+            , next = Math.min(centers.length - 1, j + 1)
+            , slope = (radii[next] - radii[prev]) / Math.max(.001, length(sub(centers[next], centers[prev])));
+          for (let i = 0; i < sides; i++) {
+            const ang = i * TAU / sides
+              , n = add(mul(a, Math.cos(ang)), mul(b, Math.sin(ang)));
+            pos.push(...add(centers[j], mul(n, radii[j])));
+            normal.push(...norm(sub(n, mul(t, slope))));
+            if (j) {
+              const k = (j - 1) * sides + i
+                , l = (j - 1) * sides + (i + 1) % sides;
+              idx.push(k, l, k + sides, l, l + sides, k + sides)
+            }
+          }
+        }
+        return {
+          pos,
+          normal,
+          idx
+        }
+      }
+      function ellipsoid(p, x, y, z) {
+        const pos = []
+          , normal = []
+          , idx = []
+          , rows = 9
+          , cols = 16;
+        for (let j = 0; j <= rows; j++) {
+          const t = j / rows * Math.PI;
+          for (let i = 0; i < cols; i++) {
+            const a = TAU * i / cols
+              , n = [Math.sin(t) * Math.cos(a), Math.cos(t), Math.sin(t) * Math.sin(a)];
+            pos.push(p[0] + n[0] * x, p[1] + n[1] * y, p[2] + n[2] * z);
+            normal.push(...norm([n[0] / x, n[1] / y, n[2] / z]));
+            if (j) {
+              const k = (j - 1) * cols + i
+                , l = (j - 1) * cols + (i + 1) % cols;
+              idx.push(k, l, k + cols, l, l + cols, k + cols)
+            }
+          }
+        }
+        return {
+          pos,
+          normal,
+          idx
+        }
+      }
+      function pinPose(a) {
+        const p = weighted(a.b.world, a)
+          , n = norm(weighted(a.b.normal, a))
+          , axis = norm(add(mul(n, .63), [-.21, .75, .11]))
+          , len = .54 + Math.max(0, 1 - (time - a.born) * 7) * .29;
+        return {
+          p,
+          axis,
+          end: add(p, mul(axis, len)),
+          len
+        }
+      }
+      function drawAccessories() {
+        let i = 0;
+        for (const a of pins) {
+          const {p, axis, len} = pinPose(a);
+          const heights = [-.15, .00, len - .065, len - .055, len - .049, len - .009, len, len + .002]
+            , rs = [.003, .029, .029, .088, .101, .101, .086, .002];
+          accessory('pin' + i, tube(heights.map(h => add(p, mul(axis, h))), rs, 18, axis), 3, [.61, .68, .71]);
+          accessory('band' + i, tube([len - .165, len - .105].map(h => add(p, mul(axis, h))), [.031, .031], 12, axis), 3, [.85, .50, .16]);
+          i++
+        }
+        i = 0;
+        for (const f of flows) {
+          if (f.mass < .06)
+            continue;
+          const centers = []
+            , radii = []
+            , w = .045 + .045 * Math.min(f.mass, 1);
+          for (let j = 0; j <= 10; j++) {
+            const t = j / 10;
+            centers.push(flowPath(f, t));
+            radii.push(w * (j === 10 ? .06 : .35 + .60 * Math.pow(1 - t, 3) + .65 * Math.exp(-Math.pow((t - .82) * 7, 2))))
+          }
+          accessory('flow' + i++, tube(centers, radii, 14), 4, f.color)
+        }
+        i = 0;
+        for (const d of drops) {
+          accessory('drop' + i++, ellipsoid(d.p, d.r, d.r * 1.38, d.r), 4, d.color)
+        }
+        i = 0;
+        for (const q of pools) {
+          accessory('pool' + i++, ellipsoid(q.p, q.r * 1.16, .021 + q.r * .07, q.r * .81), 4, q.color)
+        }
+      }
+      function axes() {
+        if (!right)
+          return;
+        const ax = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+        $('axes').innerHTML = ax.map( (a, i) => {
+          const x = 25 + dot(a, right) * 17
+            , y = 25 - dot(a, up) * 17
+            , c = ['#c79577', '#98b99a', '#8fa9c6'][i];
+          return '<path d="M25 25 L' + x + ' ' + y + '" stroke="' + c + '" fill="none"/><text x="' + (25 + (x - 25) * 1.34) + '" y="' + (28 + (y - 25) * 1.34) + '" text-anchor="middle" fill="' + c + '">' + 'XYZ'[i] + '</text>'
+        }
+        ).join('') + '<circle cx="25" cy="25" r="2" fill="#d2d0c8"/>'
+      }
+    </script>
+    <script>
+      function resolveContacts() {
+        const dirs = [[0, 1, 0], [1, 0, 0], [0, 0, 1]];
+        for (let i = 1; i < 8; i++) {
+          const a = Math.PI * i / 8;
+          dirs.push([Math.cos(a), 0, Math.sin(a)])
+        }
+        for (let i = 0; i < pieces.length; i++)
+          for (let j = 0; j < i; j++) {
+            const a = pieces[i]
+              , b = pieces[j];
+            if (a.settled && b.settled)
+              continue;
+            const delta = sub(a.pos, b.pos);
+            if (length(delta) > (length(a.size) + length(b.size)) * .56 + .3)
+              continue;
+            const axes = dirs.slice();
+            for (const p of [a, b]) {
+              if (p.cutAxis)
+                axes.push(p.cutAxis);
+              if (!p.sample) {
+                p.sample = [];
+                for (let k = 0; k < p.n; k += Math.max(1, Math.floor(p.n / 220)))
+                  p.sample.push(k)
+              }
+            }
+            let depth = Infinity
+              , sep = null;
+            for (const d of axes) {
+              let amin = Infinity
+                , amax = -Infinity
+                , bmin = Infinity
+                , bmax = -Infinity;
+              for (const p of [a, b]) {
+                let lo = Infinity
+                  , hi = -Infinity;
+                const w = p.world;
+                for (const k of p.sample) {
+                  const f = k * 3
+                    , val = w[f] * d[0] + w[f + 1] * d[1] + w[f + 2] * d[2];
+                  lo = Math.min(lo, val);
+                  hi = Math.max(hi, val)
+                }
+                if (p === a) {
+                  amin = lo;
+                  amax = hi
+                } else {
+                  bmin = lo;
+                  bmax = hi
+                }
+              }
+              const plus = bmax - amin
+                , minus = amax - bmin
+                , overlap = Math.min(plus, minus);
+              if (overlap < .012) {
+                sep = null;
+                break
+              }
+              if (overlap < depth) {
+                depth = overlap;
+                sep = plus < minus ? d : mul(d, -1)
+              }
+            }
+            if (!sep)
+              continue;
+            const vertical = Math.abs(sep[1]) > .70
+              , wa = vertical ? (sep[1] > 0 ? 1 : 0) : .5
+              , wb = 1 - wa
+              , closing = dot(sub(a.vel, b.vel), sep);
+            const correction = Math.min(.23, depth) * .74;
+            for (const [p,weight,sign] of [[a, wa, 1], [b, wb, -1]]) {
+              if (!weight)
+                continue;
+              p.pos = add(p.pos, mul(sep, correction * weight * sign));
+              if (closing < 0)
+                p.vel = add(p.vel, mul(sep, -closing * weight * sign * 1.12));
+              if (closing < -1.0)
+                p.speed[1] -= Math.min(.9, -closing * .18);
+              p.settled = false;
+              updateSurface(p)
+            }
+          }
+      }
+      // The offline canvas renderer shares the meshes, picking and physics with WebGL.
+      function cssRGB(c) {
+        return 'rgb(' + c.map(v => Math.round(clamp(v, 0, 1) * 255)).join(',') + ')'
+      }
+      function renderCanvas() {
+        const c = ctx2;
+        c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const bg = c.createRadialGradient(W * .49, H * .49, 3, W * .5, H * .59, W * .72);
+        bg.addColorStop(0, '#32383c');
+        bg.addColorStop(1, '#171a1d');
+        c.fillStyle = bg;
+        c.fillRect(0, 0, W, H);
+        function line3(a, b, col, width=1) {
+          const s = project(a)
+            , t = project(b);
+          c.strokeStyle = col;
+          c.lineWidth = width;
+          c.beginPath();
+          c.moveTo(s[0], s[1]);
+          c.lineTo(t[0], t[1]);
+          c.stroke()
+        }
+        for (let i = -10; i <= 10; i++) {
+          line3([i * .72, -.23, -8], [i * .72, -.23, 6], '#ffffff0b');
+          line3([-9, -.23, i * .72], [9, -.23, i * .72], '#ffffff0b')
+        }
+        for (const [y,color] of [[-.22, '#17191c'], [-.145, '#404448'], [-.105, '#202327'], [0, '#42484a']]) {
+          c.fillStyle = color;
+          c.beginPath();
+          for (let i = 0; i <= 120; i++) {
+            const a = i * TAU / 120
+              , s = project([2.93 * Math.cos(a), y, 2.93 * Math.sin(a)]);
+            i ? c.lineTo(s[0], s[1]) : c.moveTo(s[0], s[1])
+          }
+          c.fill()
+        }
+        for (let i = 0; i < 120; i++) {
+          const a = i / 120 * TAU
+            , r = i % 5 ? 2.76 : 2.69;
+          line3([r * Math.cos(a), .002, r * Math.sin(a)], [2.83 * Math.cos(a), .002, 2.83 * Math.sin(a)], i % 30 ? '#727677' : '#d5a767')
+        }
+        const faces = [];
+        for (const b of pieces) {
+          const w = b.world
+            , sh = project([b.pos[0], .014, b.pos[2]]);
+          c.save();
+          c.translate(sh[0], sh[1]);
+          c.scale(1, Math.sin(pitch) + .035);
+          const s = ppu * (b.size[0] + b.size[2]) * .32
+            , g = c.createRadialGradient(0, 0, 0, 0, 0, s);
+          g.addColorStop(0, '#060810aa');
+          g.addColorStop(1, '#11121a00');
+          c.fillStyle = g;
+          c.fillRect(-s, -s, 2 * s, 2 * s);
+          c.restore();
+          const xy = Array.from({
+            length: b.n
+          }, (_, i) => project(point(w, i)));
+          for (let k = 0; k < b.indices.length; k += 3) {
+            const [a,m,d] = [b.indices[k], b.indices[k + 1], b.indices[k + 2]]
+              , p = xy[a]
+              , q = xy[m]
+              , r = xy[d];
+            if ((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]) > 0)
+              continue;
+            const n = norm(add(add(point(b.normal, a), point(b.normal, m)), point(b.normal, d)))
+              , v = norm(sub(eye, point(w, a)))
+              , ref = sub(mul(n, 2 * dot(n, v)), v)
+              , pig = rgbAt((b.mat[a * 3 + 1] + b.mat[m * 3 + 1] + b.mat[d * 3 + 1]) / 6.15);
+            const shine = Math.pow(Math.max(0, dot(ref, [-.5, .75, .44])), 28) * .74 + Math.pow(Math.max(0, dot(ref, [.72, .30, -.62])), 32) * .63
+              , light = .77 + .18 * dot(n, [-.5, .72, .47]) + .07 * (1 - Math.abs(dot(v, n)));
+            faces.push([(p[2] + q[2] + r[2]) / 3, p, q, r, cssRGB(mix(mul(pig, light), [1, .98, .98], shine))])
+          }
+        }
+        faces.sort( (a, b) => b[0] - a[0]);
+        c.lineWidth = .58;
+        for (const [,p,q,r,color] of faces) {
+          c.fillStyle = c.strokeStyle = color;
+          c.beginPath();
+          c.moveTo(p[0], p[1]);
+          c.lineTo(q[0], q[1]);
+          c.lineTo(r[0], r[1]);
+          c.closePath();
+          c.fill();
+          c.stroke()
+        }
+        for (const pin of pins) {
+          const {p, end} = pinPose(pin);
+          line3(p, end, '#bec6c8', 3);
+          const s = project(end);
+          c.fillStyle = '#e0ded4';
+          c.beginPath();
+          c.ellipse(s[0], s[1], ppu * .09, ppu * .04, -.3, 0, TAU);
+          c.fill()
+        }
+        for (const f of flows) {
+          if (f.mass < .06)
+            continue;
+          for (let i = 0; i < 6; i++)
+            line3(flowPath(f, i / 6), flowPath(f, (i + 1) / 6), cssRGB(f.color), Math.max(1, ppu * .07))
+        }
+        for (const d of [...drops, ...pools]) {
+          const s = project(d.p);
+          c.fillStyle = cssRGB(d.color);
+          c.beginPath();
+          c.ellipse(s[0], s[1], ppu * d.r, ppu * d.r * (d.speed === undefined ? .34 : 1.3), 0, 0, TAU);
+          c.fill()
+        }
+      }
+      let redraw = true
+        , frameTime = 0
+        , lastHUD = 0
+        , waveHistory = Array(22).fill(0)
+        , pointerType = 'mouse';
+      function setMode(i) {
+        if (active)
+          endGesture(false);
+        mode = i;
+        document.querySelectorAll('.tool').forEach( (b, k) => b.setAttribute('aria-pressed', String(k === i)));
+        $('hint').textContent = toolspec[i][2];
+        $('orbitHint').textContent = i === 1 ? '右键拖动旋转视角' : '拖动空白处旋转视角';
+        $('cursor').style.display = 'none';
+        $('cursor').querySelector('use').setAttribute('href', '#' + toolspec[i][0]);
+        $('sliceLine').setAttribute('d', '');
+        redraw = true
+      }
+      const rack = document.querySelector('.toolrack');
+      toolspec.forEach( ([ico,label], i) => {
+        const b = document.createElement('button');
+        b.className = 'tool';
+        b.type = 'button';
+        b.title = label + ' (' + (i + 1) + ')';
+        b.setAttribute('aria-label', label);
+        b.innerHTML = '<svg><use href="#' + ico + '"/></svg><span>' + label + '</span><kbd class="key">' + (i + 1) + '</kbd>';
+        b.addEventListener('click', () => setMode(i));
+        rack.appendChild(b)
+      }
+      );
+      function reset(show=true) {
+        if (active)
+          endGesture(false);
+        for (const b of pieces)
+          freeMesh(b.gpu);
+        for (const m of accCache.values())
+          freeMesh(m);
+        accCache.clear();
+        pieces = [initialBody()];
+        pins = [];
+        flows = [];
+        drops = [];
+        pools = [];
+        heatSpot = null;
+        const b = pieces[0];
+        updateSurface(b);
+        b.settled = true;
+        cameraReset();
+        setMode(0);
+        counts();
+        if (show) {
+          notice('场景已重置');
+          sound(230, .16, 1.5)
+        }
+        redraw = true
+      }
+      function cameraReset() {
+        zoom = 1;
+        yaw = .43;
+        pitch = .31;
+        camera();
+        axes();
+        redraw = true
+      }
+      function changeZoom(f) {
+        zoom = clamp(zoom * f, .65, 1.67);
+        camera();
+        redraw = true
+      }
+      $('zoomIn').onclick = () => changeZoom(1.13);
+      $('zoomOut').onclick = () => changeZoom(1 / 1.13);
+      $('cameraHome').onclick = cameraReset;
+      $('resetBtn').onclick = () => reset();
+      $('audio').onclick = () => {
+        muted = !muted;
+        const b = $('audio')
+          , s = muted ? '开启音效' : '关闭音效';
+        b.title = s;
+        b.setAttribute('aria-label', s);
+        b.setAttribute('aria-pressed', String(!muted));
+        b.querySelector('use').setAttribute('href', muted ? '#mute' : '#sound');
+        sound(260, .19, 1.25)
+      }
+      ;
+      function localXY(e) {
+        const r = canvas.getBoundingClientRect();
+        return [e.clientX - r.left, e.clientY - r.top]
+      }
+      function cursorAt(x, y, h) {
+        const custom = pointerType !== 'touch' && mode !== 0 && (h || active?.kind === 'knife' || active?.kind === 'heat');
+        canvas.style.cursor = custom ? 'none' : active?.kind === 'orbit' || active?.kind === 'grab' ? 'grabbing' : h ? 'pointer' : 'grab';
+        const cur = $('cursor');
+        cur.style.display = custom ? 'block' : 'none';
+        if (custom) {
+          cur.style.transform = 'translate(' + (x - 4) + 'px,' + (y - (mode === 3 ? 5 : 26)) + 'px)';
+          cur.style.color = mode === 3 && active?.kind === 'heat' ? '#ffd290' : '#fff2d9'
+        }
+      }
+      canvas.addEventListener('pointerdown', e => {
+        if (active || e.button !== 0 && e.button !== 2)
+          return;
+        const [x,y] = localXY(e)
+          , h = hit(x, y);
+        pointerType = e.pointerType;
+        canvas.setPointerCapture(e.pointerId);
+        lastMouse = [x, y];
+        const basics = {
+          id: e.pointerId,
+          x,
+          y,
+          sx: x,
+          sy: y
+        };
+        redraw = true;
+        if (e.button === 2 || e.altKey || (!h && mode !== 1 && mode !== 3)) {
+          active = {
+            ...basics,
+            kind: 'orbit',
+            yaw,
+            pitch
+          };
+          cursorAt(x, y, false);
+          return
+        }
+        if (mode === 0 && h) {
+          const m = spring(h.b, weighted(h.b.rest, h));
+          m.v = mul(h.normal, -3.8);
+          m.d = mul(h.normal, -.12);
+          m.hold = true;
+          m.goal = mul(h.normal, -.075);
+          h.b.speed[1] -= .8;
+          active = {
+            ...basics,
+            kind: 'grab',
+            b: h.b,
+            m,
+            contactNormal: h.normal,
+            startPoint: h.p,
+            startPos: h.b.pos.slice(),
+            target: h.p.slice(),
+            t: performance.now(),
+            release: zero()
+          };
+          sound(240, .17, .42)
+        }
+        if (mode === 1)
+          active = {
+            ...basics,
+            kind: 'knife'
+          };
+        if (mode === 2 && h) {
+          placePin(h);
+          active = {
+            ...basics,
+            kind: 'pin'
+          }
+        }
+        if (mode === 3) {
+          active = {
+            ...basics,
+            kind: h ? 'heat' : 'pending',
+            b: h?.b,
+            h,
+            yaw,
+            pitch
+          };
+          if (h)
+            sound(110, .16, .5, 'triangle')
+        }
+        cursorAt(x, y, h);
+      }
+      );
+      canvas.addEventListener('pointermove', e => {
+        if (active && e.pointerId !== active.id)
+          return;
+        pointerType = e.pointerType;
+        const [x,y] = localXY(e);
+        lastMouse = [x, y];
+        let h = null;
+        if (active) {
+          const a = active;
+          redraw = true;
+          if (a.kind === 'grab') {
+            const target = onViewPlane(x, y, a.startPoint)
+              , t = performance.now()
+              , dt = clamp((t - a.t) / 1000, .008, .12)
+              , instant = mul(sub(target, a.target), 1 / dt);
+            a.release = mix(a.release, instant, .53);
+            a.target = target;
+            a.t = t;
+          } else if (a.kind === 'orbit' || a.kind === 'pending') {
+            a.kind = 'orbit';
+            yaw = a.yaw - (x - a.sx) * .007;
+            pitch = clamp(a.pitch + (y - a.sy) * .005, .12, .98);
+            camera();
+            axes()
+          } else if (a.kind === 'knife') {
+            $('sliceLine').setAttribute('d', 'M' + a.sx + ' ' + a.sy + 'L' + x + ' ' + y)
+          } else if (a.kind === 'heat') {
+            h = hit(x, y);
+            a.h = h;
+            a.b = h?.b
+          }
+          a.x = x;
+          a.y = y;
+        } else {
+          h = hit(x, y)
+        }
+        cursorAt(x, y, h || active?.kind === 'grab');
+      }
+      );
+      function endGesture(commit=true) {
+        const a = active;
+        if (!a)
+          return;
+        active = null;
+        if (a.kind === 'grab') {
+          a.m.hold = false;
+          let impulse = a.release;
+          if (!commit || performance.now() - a.t > 135)
+            impulse = zero();
+          const scale = Math.min(1, 8.8 / (length(impulse) || 1));
+          impulse = mul(impulse, scale);
+          a.b.vel = add(mul(a.b.vel, .65), mul(impulse, .61));
+          a.b.speed = add(a.b.speed, mul(impulse, .38));
+          a.b.spin[2] -= dot(impulse, right) * .10;
+          a.b.settled = false;
+          if (length(impulse) > 2)
+            sound(160, .22, .46)
+        }
+        if (a.kind === 'knife') {
+          if (commit)
+            sliceGesture(a);
+          $('sliceLine').setAttribute('d', '')
+        }
+        heatSpot = null;
+        redraw = true;
+        if (canvas.hasPointerCapture(a.id))
+          canvas.releasePointerCapture(a.id);
+        if (lastMouse)
+          cursorAt(...lastMouse, false);
+      }
+      canvas.addEventListener('pointerup', e => {
+        if (e.pointerId === active?.id) {
+          const [x,y] = localXY(e);
+          active.x = x;
+          active.y = y;
+          endGesture(true)
+        }
+      }
+      );
+      canvas.addEventListener('lostpointercapture', e => {
+        if (active?.id === e.pointerId)
+          endGesture(false)
+      }
+      );
+      canvas.addEventListener('pointercancel', () => endGesture(false));
+      canvas.addEventListener('pointerleave', () => {
+        if (!active) {
+          $('cursor').style.display = 'none';
+          lastMouse = null
+        }
+      }
+      );
+      canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        changeZoom(Math.exp(-clamp(e.deltaY, -200, 200) * .0011))
+      }
+      , {
+        passive: false
+      });
+      canvas.oncontextmenu = e => e.preventDefault();
+      window.addEventListener('keydown', e => {
+        if (e.altKey || e.ctrlKey || e.metaKey)
+          return;
+        if (/^[1-4]$/.test(e.key)) {
+          setMode(Number(e.key) - 1);
+          e.preventDefault()
+        } else if (e.key.toLowerCase() === 'r' && !e.repeat)
+          reset();
+        else if (e.key === 'Escape')
+          endGesture(false)
+      }
+      );
+      window.addEventListener('blur', () => endGesture(false));
+      function heatOverlay() {
+        let fl = $('flameShape');
+        if (!fl) {
+          fl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          fl.id = 'flameShape';
+          $('overlay').appendChild(fl);
+          fl.innerHTML = `
+ <defs><linearGradient id="fuel"><stop stop-color="#a85b1d"/><stop offset=".15" stop-color="#ffd58b"/><stop offset=".34" stop-color="#eca851"/><stop offset=".83" stop-color="#d98a38"/><stop offset="1" stop-color="#774827"/></linearGradient><linearGradient id="steel"><stop stop-color="#60696d"/><stop offset=".25" stop-color="#e5e6df"/><stop offset=".5" stop-color="#a3aaab"/><stop offset=".8" stop-color="#58636a"/><stop offset="1" stop-color="#bdc2bf"/></linearGradient><linearGradient id="flame" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#ff8528" stop-opacity=".65"/><stop offset=".5" stop-color="#ffd27a"/><stop offset=".76" stop-color="#fff3cd"/><stop offset="1" stop-color="#7ec8ff"/></linearGradient></defs>
+ <g id="wick"><path fill="url(#flame)" d="M0 0C2 8 9 13 6 20Q4 25 0 23C-8 20-7 15-4 11Q-1 8 0 0Z"/><path fill="#fff7d7" opacity=".76" d="M0 10Q7 19 2 22Q-3 23-2 19Z"/></g>
+ <rect x="-8" y="27" width="22" height="43" rx="5.5" fill="url(#fuel)" stroke="#6b482c" stroke-width=".8"/><rect x="-5.5" y="35.5" width="2" height="27" rx="1" fill="#ffdfad" opacity=".52"/><path d="M-7 65Q0 68 13 65" fill="none" stroke="#925c2d"/>
+ <rect x="-8.6" y="23" width="15.4" height="12" rx="2" fill="url(#steel)" stroke="#454e52" stroke-width=".7"/><path d="M-5 28v3m3-3v3m3-3v3" stroke="#526068" stroke-width="1.3"/>
+ <circle cx="8" cy="25" r="4.3" fill="#555e61" stroke="#d1d3cb" stroke-width="1"/><circle cx="8" cy="25" r="2.1" fill="#31373a"/><path d="M7 31h6.5v3.5H7" fill="#484746"/>`;
+        }
+        if (!heatSpot) {
+          fl.style.display = 'none';
+          return
+        }
+        const p = project(heatSpot);
+        $('cursor').style.display = 'none';
+        fl.style.display = '';
+        fl.setAttribute('transform', 'translate(' + p[0] + ' ' + p[1] + ') rotate(-28)');
+        $('wick').setAttribute('transform', 'translate(0 23) scale(' + (1 + .09 * Math.sin(time * 39)) + ' ' + (1 + .1 * Math.sin(time * 31)) + ') translate(0 -23)')
+      }
+      function frame(now) {
+        const dt = Math.min(.048, Math.max(0, (now - (frameTime || now)) / 1000));
+        frameTime = now;
+        time += dt;
+        const moving = pieces.some(b => !b.settled)
+          , liquid = drops.length > 0 || flows.some(f => Math.abs(f.mass * 1.08 - f.extent) > .001 || (f.mass > .47 && f.reserve >= .22))
+          , animate = moving || liquid || !!active || pins.some(p => time - p.born < .24);
+        if (animate || redraw) {
+          if (dt > 0 && (moving || liquid || active?.kind === 'heat')) {
+            const steps = dt > .023 ? 2 : 1;
+            for (let s = 0; s < steps; s++) {
+              meltPhysics(dt / steps);
+              physics(dt / steps);
+              if (pieces.length > 1)
+                resolveContacts()
+            }
+          }
+          if (gl)
+            renderGL();
+          else
+            renderCanvas();
+          heatOverlay();
+          redraw = false
+        }
+        if (now - lastHUD > 95) {
+          lastHUD = now;
+          const energy = pieces.reduce( (s, b) => s + length(b.speed) + length(b.vel) * .4, 0);
+          waveHistory.shift();
+          waveHistory.push(Math.sin(time * 23) * Math.min(4.6, energy * 1.7) + (active?.kind === 'heat' ? Math.sin(time * 33) : 0));
+          $('wave').setAttribute('d', waveHistory.map( (v, i) => (i ? 'L' : 'M') + (i * 33 / (waveHistory.length - 1)).toFixed(1) + ' ' + (6 - v).toFixed(1)).join(''))
+        }
+        requestAnimationFrame(frame);
+      }
+      prepareGL();
+      resize();
+      reset(false);
+      new ResizeObserver( () => {
+        resize();
+        redraw = true
+      }
+      ).observe(canvas);
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>
